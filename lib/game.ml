@@ -1,1 +1,2 @@
-let game_hello () = print_endline "Hello, Newtonoiders!"
+open Tp7
+let game_hello () = Tp7.main
