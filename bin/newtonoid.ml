@@ -23,10 +23,24 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
-let draw_state etat = failwith "A DEFINIR"
+(* etat : position (x,y), vitesse (dx,dy) et score *)
+type etat = (float * float) * (float * float) * int
+
+let draw_state (etat : etat) =
+  match etat with
+  | ((x, y), _, score) ->
+    (* dessin de la balle *)
+    Graphics.draw_circle (int_of_float x) (int_of_float y) 5;
+    (* déplacement pour dessiner en bas à gauche de la fenetre*)
+    Graphics.moveto 20 20;
+    (* dessin du score *)
+    Graphics.draw_string (string_of_int score)
+
 
 (* extrait le score courant d'un etat : *)
-let score etat : int = failwith "A DEFINIR"
+let score etat : int = 
+  match etat with
+  | (_, _, score) -> score
 
 let draw flux_etat =
   let rec loop flux_etat last_score =
@@ -48,4 +62,19 @@ let draw flux_etat =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-let _ = game_hello()
+  
+(* faire dune exec bin/newtonoid.exe pour run*)
+
+let _ = failwith "TODO : modules Freefall / Bouncing / Collision / Mouse pour appel avec run"
+
+(* 
+
+(* position initiale de la balle au centre avec une vitesse nulle et un score égal à 0 *)
+let _ = let init = ((400,300),(0,0),0) in
+         draw (Freefall.run init)
+
+*)
+
+
+         
+
