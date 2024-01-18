@@ -21,7 +21,7 @@ module Init = struct
 
   let etat =
     let palette : palette_info = 0, false in
-    let ball : ball = (500., 500.), (500., 500.) in
+    let ball : ball = (500., 500.), (50., 50.) in
     let score : score = 0 in
     palette, ball, score
 end
