@@ -15,11 +15,11 @@ module Box = struct
 end
 
 module Init = struct
-  let g = 100.
+  let g = 500.
   let dt = 1. /. 60. (* 60 Hz *)
 
   let etat =
-    let ball : ball = (500., 500.), (50., 50.) in
+    let ball : ball = (500., 500.), (200., 200.) in
     let score = 0 in
     ball, score
 end
@@ -51,8 +51,8 @@ module Palette = struct
     fun mouse_x (bx, by) dy ->
     let bx = int_of_float bx in
     let by = int_of_float by in
-    let x1, _, x2, _ = edge_coord mouse_x in
-    bx >= x1 && bx <= x2 && by <= pos_y && dy <= 0.0
+    let x1, y1, x2, y2 = edge_coord mouse_x in
+    bx >= x1 && bx <= x2 && by >= y1 && by <= y2 && dy <= 0.0
 
   let draw_palette () =
     let mouse_x, _ = mouse_info () in

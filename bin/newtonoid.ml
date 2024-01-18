@@ -11,10 +11,20 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
+let draw_score score =
+  let score = string_of_int score in
+  let score = "Score : " ^ score in
+  Graphics.set_color Graphics.black;
+  (* Marche pas parce que personne s'est donné la peine de le faire marcher *)
+  (* Graphics.set_text_size 20; *)
+  Graphics.moveto 10 10;
+  Graphics.draw_string score
+
 (* TODO : juste pour debug pour l'instant *)
 let draw_state : etat -> unit =
   fun etat ->
   let ball, score = etat in
+  draw_score score;
   Palette.draw_palette ();
   Game.draw_ball ball
 
