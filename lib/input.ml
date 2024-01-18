@@ -5,5 +5,5 @@ let mouse =
   Flux.unfold
     (fun () ->
       let x, _ = Graphics.mouse_pos () in
-      Some ((float_of_int x, Graphics.button_down ()), ()))
+      Some ((x, Graphics.button_down ()), ()))
     ()

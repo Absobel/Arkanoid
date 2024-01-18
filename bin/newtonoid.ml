@@ -1,6 +1,7 @@
 (* ouvre la bibliotheque de modules definis dans lib/ *)
 open Libnewtonoid
 open Iterator
+open Input
 
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
 open Game
@@ -23,10 +24,13 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
-let draw_state etat = failwith "A DEFINIR"
+(* TODO : juste pour debug pour l'instant *)
+let draw_state etat = 
+  let pos, _ = etat in
+  Game.draw_box pos
 
 (* extrait le score courant d'un etat : *)
-let score etat : int = failwith "A DEFINIR"
+let score etat : int = 0
 
 let draw flux_etat =
   let rec loop flux_etat last_score =
@@ -38,9 +42,8 @@ let draw flux_etat =
       draw_state etat;
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
-      Unix.sleepf Init.dt;
+      Unix.sleepf (Init.dt /. 1000.);
       loop flux_etat' (last_score + score etat)
-    | _ -> assert false
   in
   Graphics.open_graph graphic_format;
   Graphics.auto_synchronize false;
@@ -48,4 +51,4 @@ let draw flux_etat =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-let () = game_hello ()
+let () = draw (Input.mouse)
