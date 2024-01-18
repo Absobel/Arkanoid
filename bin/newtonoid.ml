@@ -6,18 +6,6 @@ open Input
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
 open Game
 
-module Init = struct
-  let dt = 1000. /. 60. (* 60 Hz *)
-end
-
-module Box = struct
-  let marge = 10.
-  let infx = 10.
-  let infy = 10.
-  let supx = 790.
-  let supy = 590.
-end
-
 let graphic_format =
   Format.sprintf
     " %dx%d+50+50"
@@ -25,18 +13,22 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
 (* TODO : juste pour debug pour l'instant *)
-let draw_state etat = 
-  let pos, _ = etat in
-  Game.draw_box pos
+let draw_state : etat -> unit =
+  fun etat ->
+  let palette, ball, score = etat in
+  Game.draw_palette palette;
+  Game.draw_ball ball
 
 (* extrait le score courant d'un etat : *)
-let score etat : int = 
+let score etat : int =
   (* match etat with
-  | (_, _, score) -> score *)
+     | (_, _, score) -> score *)
   0
 
-let draw flux_etat =
-  let rec loop flux_etat last_score =
+let draw : etat Flux.t -> unit =
+  fun flux_etat ->
+  let rec loop : etat Flux.t -> score -> score =
+    fun flux_etat last_score ->
     match Flux.(uncons flux_etat) with
     | None -> last_score
     | Some (etat, flux_etat') ->
@@ -45,7 +37,7 @@ let draw flux_etat =
       draw_state etat;
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
-      Unix.sleepf (Init.dt /. 1000.);
+      Unix.sleepf (Init.dt);
       loop flux_etat' (last_score + score etat)
   in
   Graphics.open_graph graphic_format;
@@ -54,17 +46,14 @@ let draw flux_etat =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-let () = draw (Input.mouse)
+let () = draw (Game.update_etat Init.etat)
 
-  
 (* faire dune exec bin/newtonoid.exe pour run*)
 
-let _ = failwith "TODO : modules Freefall / Bouncing / Collision / Mouse pour appel avec run"
+(* let _ = failwith "TODO : modules Freefall / Bouncing / Collision / Mouse pour appel avec run" *)
 
-(* 
-
-(* position initiale de la balle au centre avec une vitesse nulle et un score égal à 0 *)
-let _ = let init = ((400,300),(0,0),0) in
-         draw (Freefall.run init)
-
+(*
+   (* position initiale de la balle au centre avec une vitesse nulle et un score égal à 0 *)
+   let _ = let init = ((400,300),(0,0),0) in
+   draw (Freefall.run init)
 *)
