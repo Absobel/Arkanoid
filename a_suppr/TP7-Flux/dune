@@ -1,6 +1,0 @@
-(library
- (name tp7_etu)
- (libraries unix graphics)
- (inline_tests)
- (preprocess
-  (pps ppx_inline_test)))

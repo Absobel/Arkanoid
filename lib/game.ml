@@ -21,7 +21,7 @@ module Init = struct
 
   let etat =
     let palette : palette_info = 0, false in
-    let ball : ball = (500., 500.), (0., 0.) in
+    let ball : ball = (500., 500.), (500., 500.) in
     let score : score = 0 in
     palette, ball, score
 end
@@ -77,32 +77,39 @@ let integre dt flux =
   acc
 
 let rec unless flux cond f_flux =
-  match Flux.uncons flux with
-  | None -> Flux.vide
-  | Some (a, fl) -> if cond a then f_flux a else Flux.cons a (unless fl cond f_flux)
+  Tick
+    (lazy
+      (match Flux.uncons flux with
+       | None -> None
+       | Some (a, fl) ->
+         if cond a then Flux.uncons (f_flux a) else Some (a, unless fl cond f_flux)))
 
 let contact_x x dx = (x > Box.supx && dx >= 0.0) || (x < Box.infx && dx <= 0.0)
 let contact_y y dy = (y > Box.supy && dy >= 0.0) || (y < Box.infy && dy <= 0.0)
 let rebond_x x dx = if contact_x x dx then -.dx else dx
 let rebond_y y dy = if contact_y y dy then -.dy else dy
 
-let ball_update : ball -> ball Flux.t =
-  fun ((x, y), (dx, dy)) ->
-  let a_flux = Flux.constant (0.0, -.Init.g) in
-  let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
-  let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
-  Flux.map2 (fun x v -> x, v) x_flux v_flux
-(*
-   let rec ball_update : ball -> ball Flux.t =
+(* FreeFall *)
+(* let ball_update : ball -> ball Flux.t =
    fun ((x, y), (dx, dy)) ->
    let a_flux = Flux.constant (0.0, -.Init.g) in
    let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
    let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
-   unless
-   (Flux.map2 (fun x v -> x, v) x_flux v_flux)
-   (fun ((x, y), (dx, dy)) -> contact_x x dx || contact_y y dy)
-   (fun ((x, y), (dx, dy)) -> ball_update ((x, y), (rebond_x x dx, rebond_y y dy)))
-*)
+   Flux.map2 (fun x v -> x, v) x_flux v_flux *)
+
+(* BouncingBall *)
+let rec ball_update : ball -> ball Flux.t =
+  fun ((x, y), (dx, dy)) ->
+  let dx = rebond_x x dx in
+  let dy = rebond_y y dy in
+  let a_flux = Flux.constant (0.0, -.Init.g) in
+  let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
+  let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
+  unless
+    (Flux.map2 (fun x v -> x, v) x_flux v_flux)
+    (fun ((x, y), (dx, dy)) -> contact_x x dx || contact_y y dy)
+    ball_update
+
 let update_etat : etat -> etat Flux.t =
   fun (_, ball, score) ->
   let palette_flux = Input.mouse in
