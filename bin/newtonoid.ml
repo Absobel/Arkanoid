@@ -15,8 +15,8 @@ let graphic_format =
 (* TODO : juste pour debug pour l'instant *)
 let draw_state : etat -> unit =
   fun etat ->
-  let palette, ball, score = etat in
-  Game.draw_palette palette;
+  let ball, score = etat in
+  Palette.draw_palette ();
   Game.draw_ball ball
 
 (* extrait le score courant d'un etat : *)
@@ -27,7 +27,7 @@ let score etat : int =
 
 let draw : etat Flux.t -> unit =
   fun flux_etat ->
-  let rec loop : etat Flux.t -> score -> score =
+  let rec loop : etat Flux.t -> int -> int =
     fun flux_etat last_score ->
     match Flux.(uncons flux_etat) with
     | None -> last_score
@@ -37,7 +37,7 @@ let draw : etat Flux.t -> unit =
       draw_state etat;
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
-      Unix.sleepf (Init.dt);
+      Unix.sleepf Init.dt;
       loop flux_etat' (last_score + score etat)
   in
   Graphics.open_graph graphic_format;
@@ -49,11 +49,3 @@ let draw : etat Flux.t -> unit =
 let () = draw (Game.update_etat Init.etat)
 
 (* faire dune exec bin/newtonoid.exe pour run*)
-
-(* let _ = failwith "TODO : modules Freefall / Bouncing / Collision / Mouse pour appel avec run" *)
-
-(*
-   (* position initiale de la balle au centre avec une vitesse nulle et un score égal à 0 *)
-   let _ = let init = ((400,300),(0,0),0) in
-   draw (Freefall.run init)
-*)

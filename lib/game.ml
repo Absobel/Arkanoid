@@ -4,8 +4,7 @@ open Iterator
 
 type ball = (float * float) * (float * float)
 type palette_info = int * bool
-type score = int
-type etat = palette_info * ball * score
+type etat = ball * int
 
 module Box = struct
   let marge = 10.
@@ -20,10 +19,9 @@ module Init = struct
   let dt = 1. /. 60. (* 60 Hz *)
 
   let etat =
-    let palette : palette_info = 0, false in
     let ball : ball = (500., 500.), (50., 50.) in
-    let score : score = 0 in
-    palette, ball, score
+    let score = 0 in
+    ball, score
 end
 
 module Palette = struct
@@ -32,11 +30,35 @@ module Palette = struct
   let color = Graphics.rgb 0 0 0
   let pos_y = 20
 
+  let mouse_info () =
+    try
+      let mouse_x, _ = Graphics.mouse_pos () in
+      mouse_x, Graphics.button_down ()
+    with
+    (* j'ai testé l'erreur arrive qu'une fois au début *)
+    | Graphics.Graphic_failure "graphic screen not opened" -> 0, false
+
+  let mouse_x () = fst (mouse_info ())
+  let mouse_down () = snd (mouse_info ())
+
   let edge_coord mouse_x =
     ( mouse_x - (width / 2)
     , pos_y - (height / 2)
     , mouse_x + (width / 2)
     , pos_y + (height / 2) )
+
+  let contact : int -> float * float -> float -> bool =
+    fun mouse_x (bx, by) dy ->
+    let bx = int_of_float bx in
+    let by = int_of_float by in
+    let x1, _, x2, _ = edge_coord mouse_x in
+    bx >= x1 && bx <= x2 && by <= pos_y && dy <= 0.0
+
+  let draw_palette () =
+    let mouse_x, _ = mouse_info () in
+    Graphics.set_color color;
+    let x1, y1, x2, y2 = edge_coord mouse_x in
+    Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
 end
 
 module Ball = struct
@@ -45,12 +67,6 @@ module Ball = struct
 end
 
 (* DRAWING FUNCTIONS *)
-
-let draw_palette : palette_info -> unit =
-  fun (mouse_x, _) ->
-  Graphics.set_color Palette.color;
-  let x1, y1, x2, y2 = Palette.edge_coord mouse_x in
-  Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
 
 let draw_ball : ball -> unit =
   fun ((x, y), _) ->
@@ -85,34 +101,37 @@ let rec unless flux cond f_flux =
          if cond a then Flux.uncons (f_flux a) else Some (a, unless fl cond f_flux)))
 
 let contact_x x dx = (x > Box.supx && dx >= 0.0) || (x < Box.infx && dx <= 0.0)
-let contact_y y dy = (y > Box.supy && dy >= 0.0) || (y < Box.infy && dy <= 0.0)
+let contact_high_y y dy = y > Box.supy && dy >= 0.0
+let contact_y (x, y) dy = contact_high_y y dy || Palette.contact (Palette.mouse_x ()) (x, y) dy
 let rebond_x x dx = if contact_x x dx then -.dx else dx
-let rebond_y y dy = if contact_y y dy then -.dy else dy
-
-(* FreeFall *)
-(* let ball_update : ball -> ball Flux.t =
-   fun ((x, y), (dx, dy)) ->
-   let a_flux = Flux.constant (0.0, -.Init.g) in
-   let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
-   let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
-   Flux.map2 (fun x v -> x, v) x_flux v_flux *)
+let rebond_y (x, y) dy = if contact_y (x, y) dy then -.dy else dy
 
 (* BouncingBall *)
 let rec ball_update : ball -> ball Flux.t =
   fun ((x, y), (dx, dy)) ->
   let dx = rebond_x x dx in
-  let dy = rebond_y y dy in
+  let dy = rebond_y (x, y) dy in
   let a_flux = Flux.constant (0.0, -.Init.g) in
   let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
   let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
   unless
     (Flux.map2 (fun x v -> x, v) x_flux v_flux)
-    (fun ((x, y), (dx, dy)) -> contact_x x dx || contact_y y dy)
+    (fun ((x, y), (dx, dy)) -> contact_x x dx || contact_y (x, y) dy)
     ball_update
 
-let update_etat : etat -> etat Flux.t =
-  fun (_, ball, score) ->
-  let palette_flux = Input.mouse in
-  let ball_flux = ball_update ball in
+(* Si l'un des flux a None en premier élement alors le résultat de cette focntion aura None aussi *)
+let rec update_etat : etat -> etat Flux.t =
+  fun etat ->
+  let ((x, y), (dx, dy)), score = etat in
+  (* est juste là pour test *)
   let score_flux = Flux.unfold (fun s -> Some (s, s + 1)) score in
-  Flux.map3 (fun p b s -> p, b, s) palette_flux ball_flux score_flux
+  let dx = rebond_x x dx in
+  let dy = rebond_y (x, y) dy in
+  let a_flux = Flux.constant (0.0, -.Init.g) in
+  let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
+  let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
+  let ball_flux = Flux.map2 (fun x v -> x, v) x_flux v_flux in
+  unless
+    (Flux.map2 (fun b s -> b, s) ball_flux score_flux)
+    (fun (((x, y), (dx, dy)), _) -> contact_x x dx || contact_y (x, y) dy)
+    update_etat
