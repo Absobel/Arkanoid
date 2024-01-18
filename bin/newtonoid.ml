@@ -20,9 +20,8 @@ let draw_state : etat -> unit =
 
 (* extrait le score courant d'un etat : *)
 let score etat : int =
-  (* match etat with
-     | (_, _, score) -> score *)
-  0
+  let _, score = etat in
+  score
 
 let draw : etat Flux.t -> unit =
   fun flux_etat ->
