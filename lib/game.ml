@@ -106,20 +106,6 @@ let contact_y (x, y) dy = contact_high_y y dy || Palette.contact (Palette.mouse_
 let rebond_x x dx = if contact_x x dx then -.dx else dx
 let rebond_y (x, y) dy = if contact_y (x, y) dy then -.dy else dy
 
-(* BouncingBall *)
-let rec ball_update : ball -> ball Flux.t =
-  fun ((x, y), (dx, dy)) ->
-  let dx = rebond_x x dx in
-  let dy = rebond_y (x, y) dy in
-  let a_flux = Flux.constant (0.0, -.Init.g) in
-  let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
-  let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
-  unless
-    (Flux.map2 (fun x v -> x, v) x_flux v_flux)
-    (fun ((x, y), (dx, dy)) -> contact_x x dx || contact_y (x, y) dy)
-    ball_update
-
-(* Si l'un des flux a None en premier élement alors le résultat de cette focntion aura None aussi *)
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
   let ((x, y), (dx, dy)), score = etat in
