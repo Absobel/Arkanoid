@@ -1,7 +1,6 @@
 (* ouvre la bibliotheque de modules definis dans lib/ *)
 open Libnewtonoid
 open Iterator
-open Input
 
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
 open Game
