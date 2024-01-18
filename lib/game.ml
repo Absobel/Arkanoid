@@ -85,6 +85,13 @@ let contact_x x dx = (x > Box.supx && dx >= 0.0) || (x < Box.infx && dx <= 0.0)
 let contact_y y dy = (y > Box.supy && dy >= 0.0) || (y < Box.infy && dy <= 0.0)
 let rebond_x x dx = if contact_x x dx then -.dx else dx
 let rebond_y y dy = if contact_y y dy then -.dy else dy
+
+let ball_update : ball -> ball Flux.t =
+  fun ((x, y), (dx, dy)) ->
+  let a_flux = Flux.constant (0.0, -.Init.g) in
+  let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
+  let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
+  Flux.map2 (fun x v -> x, v) x_flux v_flux
 (*
    let rec ball_update : ball -> ball Flux.t =
    fun ((x, y), (dx, dy)) ->
@@ -94,15 +101,8 @@ let rebond_y y dy = if contact_y y dy then -.dy else dy
    unless
    (Flux.map2 (fun x v -> x, v) x_flux v_flux)
    (fun ((x, y), (dx, dy)) -> contact_x x dx || contact_y y dy)
-   (fun ((x, y), (dx, dy)) -> ball_update ((x, y), (rebond_x x dx, rebond_y y dy))) *)
-
-let ball_update : ball -> ball Flux.t =
-  fun ((x, y), (dx, dy)) ->
-  let a_flux = Flux.constant (0.0, -.Init.g) in
-  let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
-  let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
-  Flux.map2 (fun x v -> x, v) x_flux v_flux
-
+   (fun ((x, y), (dx, dy)) -> ball_update ((x, y), (rebond_x x dx, rebond_y y dy)))
+*)
 let update_etat : etat -> etat Flux.t =
   fun (_, ball, score) ->
   let palette_flux = Input.mouse in
