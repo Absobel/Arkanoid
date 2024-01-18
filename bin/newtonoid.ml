@@ -30,7 +30,10 @@ let draw_state etat =
   Game.draw_box pos
 
 (* extrait le score courant d'un etat : *)
-let score etat : int = 0
+let score etat : int = 
+  (* match etat with
+  | (_, _, score) -> score *)
+  0
 
 let draw flux_etat =
   let rec loop flux_etat last_score =
@@ -52,3 +55,16 @@ let draw flux_etat =
   Graphics.close_graph ()
 
 let () = draw (Input.mouse)
+
+  
+(* faire dune exec bin/newtonoid.exe pour run*)
+
+let _ = failwith "TODO : modules Freefall / Bouncing / Collision / Mouse pour appel avec run"
+
+(* 
+
+(* position initiale de la balle au centre avec une vitesse nulle et un score égal à 0 *)
+let _ = let init = ((400,300),(0,0),0) in
+         draw (Freefall.run init)
+
+*)
