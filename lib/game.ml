@@ -16,6 +16,9 @@ module Init = struct
   let g = 500.
   let dt = 1. /. 60. (* 60 Hz *)
 
+  (* impulse_facotr * (ball - centre de la palette) = facteur ajouté à la vitesse *)
+  let impulse_factor = 8.0
+
   let etat =
     let ball : ball = (500., 500.), (200., 200.) in
     let score = 0 in
@@ -215,7 +218,16 @@ let rec update_etat : etat -> etat Flux.t =
   let ((x, y), (dx, dy)), score, br_list = etat in
   (* est juste là pour test  pour l'instant *)
   let score_flux = Flux.unfold (fun s -> Some (s, s + 1)) score in
-  let ndx = rebond_x br_list (x, y) dx in
+  let contact = Palette.contact (Palette.mouse_x ()) (x, y) dy in
+  let impulse =
+    if contact
+    then (
+      let mouse_x, _ = Palette.mouse_info () in
+      let delta = x -. float_of_int mouse_x in
+      delta *. Init.impulse_factor)
+    else 0.0
+  in
+  let ndx = rebond_x br_list (x, y) dx +. impulse in
   let ndy = rebond_y br_list (x, y) dy in
   let a_flux = Flux.constant (0.0, -.Init.g) in
   let v_flux = Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux) in
@@ -226,7 +238,6 @@ let rec update_etat : etat -> etat Flux.t =
       (fun br_list -> Brique.updated_list br_list (x, y) (dx, dy))
       (Flux.constant br_list)
   in
-
   unless
     (unless
        (Flux.map3 (fun b s br -> b, s, br) ball_flux score_flux brique_flux)
