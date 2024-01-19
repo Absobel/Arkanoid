@@ -102,14 +102,16 @@ let rec unless flux cond f_flux =
 
 let contact_x x dx = (x > Box.supx && dx >= 0.0) || (x < Box.infx && dx <= 0.0)
 let contact_high_y y dy = y > Box.supy && dy >= 0.0
+let contact_low_y y dy = y < Box.infy && dy <= 0.0
 let contact_y (x, y) dy = contact_high_y y dy || Palette.contact (Palette.mouse_x ()) (x, y) dy
 let rebond_x x dx = if contact_x x dx then -.dx else dx
 let rebond_y (x, y) dy = if contact_y (x, y) dy then -.dy else dy
 
+(* La balle devient toute seule de plus en plus rapide due à la gravité *)
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
   let ((x, y), (dx, dy)), score = etat in
-  (* est juste là pour test *)
+  (* est juste là pour test  pour l'instant *)
   let score_flux = Flux.unfold (fun s -> Some (s, s + 1)) score in
   let dx = rebond_x x dx in
   let dy = rebond_y (x, y) dy in
@@ -118,6 +120,9 @@ let rec update_etat : etat -> etat Flux.t =
   let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
   let ball_flux = Flux.map2 (fun x v -> x, v) x_flux v_flux in
   unless
+  (unless
     (Flux.map2 (fun b s -> b, s) ball_flux score_flux)
     (fun (((x, y), (dx, dy)), _) -> contact_x x dx || contact_y (x, y) dy)
-    update_etat
+    update_etat)
+  (fun (((_, y), (_, dy)), _) -> contact_low_y y dy)
+  (fun _ -> Flux.vide)
