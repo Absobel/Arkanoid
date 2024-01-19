@@ -22,7 +22,12 @@ module Init = struct
     let ball : ball = (500., 500.), (200., 200.) in
     let score = 0 in
     ball, score
-end
+  end
+  
+  module Ball = struct
+    let radius = 10
+    let color = Graphics.rgb 255 0 0
+  end
 
 module Palette = struct
   let width = 100
@@ -50,20 +55,15 @@ module Palette = struct
   let contact : int -> float * float -> float -> bool =
     fun mouse_x (bx, by) dy ->
     let bx = int_of_float bx in
-    let by = int_of_float by in
-    let x1, y1, x2, y2 = edge_coord mouse_x in
-    bx >= x1 && bx <= x2 && by >= y1 && by <= y2 && dy <= 0.0
+    let by = int_of_float by - Ball.radius in
+    let x1, _, x2, y2 = edge_coord mouse_x in
+    bx >= x1 && bx <= x2 && by >= 0 && by <= y2 && dy <= 0.0
 
   let draw_palette () =
     let mouse_x, _ = mouse_info () in
     Graphics.set_color color;
     let x1, y1, x2, y2 = edge_coord mouse_x in
     Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
-end
-
-module Ball = struct
-  let radius = 10
-  let color = Graphics.rgb 255 0 0
 end
 
 (* DRAWING FUNCTIONS *)
@@ -102,8 +102,11 @@ let rec unless flux cond f_flux =
 
 let contact_x x dx = (x > Box.supx && dx >= 0.0) || (x < Box.infx && dx <= 0.0)
 let contact_high_y y dy = y > Box.supy && dy >= 0.0
-let contact_low_y y dy = y < Box.infy && dy <= 0.0
-let contact_y (x, y) dy = contact_high_y y dy || Palette.contact (Palette.mouse_x ()) (x, y) dy
+let contact_low_y y dy = y < -.Box.marge && dy <= 0.0
+
+let contact_y (x, y) dy =
+  contact_high_y y dy || Palette.contact (Palette.mouse_x ()) (x, y) dy
+
 let rebond_x x dx = if contact_x x dx then -.dx else dx
 let rebond_y (x, y) dy = if contact_y (x, y) dy then -.dy else dy
 
@@ -120,9 +123,9 @@ let rec update_etat : etat -> etat Flux.t =
   let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
   let ball_flux = Flux.map2 (fun x v -> x, v) x_flux v_flux in
   unless
-  (unless
-    (Flux.map2 (fun b s -> b, s) ball_flux score_flux)
-    (fun (((x, y), (dx, dy)), _) -> contact_x x dx || contact_y (x, y) dy)
-    update_etat)
-  (fun (((_, y), (_, dy)), _) -> contact_low_y y dy)
-  (fun _ -> Flux.vide)
+    (unless
+       (Flux.map2 (fun b s -> b, s) ball_flux score_flux)
+       (fun (((x, y), (dx, dy)), _) -> contact_x x dx || contact_y (x, y) dy)
+       update_etat)
+    (fun (((_, y), (_, dy)), _) -> contact_low_y y dy)
+    (fun _ -> Flux.vide)
