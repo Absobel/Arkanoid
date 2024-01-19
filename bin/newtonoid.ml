@@ -23,23 +23,24 @@ let draw_score score =
 (* TODO : juste pour debug pour l'instant *)
 let draw_state : etat -> unit =
   fun etat ->
-  let ball, score = etat in
+  let ball, score, br_list = etat in
   draw_score score;
   Palette.draw_palette ();
+  Brique.draw_briques br_list;
   Game.draw_ball ball
 
 (* extrait le score courant d'un etat : *)
 let score etat : int =
-  let _, score = etat in
+  let _, score, _ = etat in
   score
 
 let draw : etat Flux.t -> unit =
   fun flux_etat ->
   let rec loop : etat Flux.t -> int -> int =
     fun flux_etat last_score ->
-    match Flux.(uncons flux_etat) with
-    | None -> last_score
-    | Some (etat, flux_etat') ->
+      match Flux.(uncons flux_etat) with
+      | None -> last_score
+      | Some (etat, flux_etat') ->
       Graphics.clear_graph ();
       (* DESSIN ETAT *)
       draw_state etat;

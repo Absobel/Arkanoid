@@ -3,8 +3,6 @@ open Iterator
 (* OBJECTS *)
 
 type ball = (float * float) * (float * float)
-type palette_info = int * bool
-type etat = ball * int
 
 module Box = struct
   let marge = 10.
@@ -21,13 +19,20 @@ module Init = struct
   let etat =
     let ball : ball = (500., 500.), (200., 200.) in
     let score = 0 in
-    ball, score
-  end
-  
-  module Ball = struct
-    let radius = 10
-    let color = Graphics.rgb 255 0 0
-  end
+    let briques =
+      let br0 = (100., 200., 200., 250., Graphics.rgb 23 41 32), true in
+      let br1 = (200., 200., 300., 250., Graphics.rgb 0 0 255), true in
+      let br2 = (300., 200., 400., 250., Graphics.rgb 0 189 21), true in
+      let br3 = (400., 200., 500., 250., Graphics.rgb 255 0 0), true in
+      [ br0; br1; br2; br3 ]
+    in
+    ball, score, briques
+end
+
+module Ball = struct
+  let radius = 10
+  let color = Graphics.rgb 255 0 0
+end
 
 module Palette = struct
   let width = 100
@@ -66,6 +71,94 @@ module Palette = struct
     Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
 end
 
+module Brique = struct
+  (* x1, y1, x2, y2, color *)
+  type t = float * float * float * float * Graphics.color
+
+  let edge_coord b =
+    let x1, y1, x2, y2, _ = b in
+    x1, y1, x2, y2
+
+  let color b =
+    let _, _, _, _, c = b in
+    c
+
+  let contact_y_one_brick br (bx, by) dy =
+    let x1, y1, x2, y2 = edge_coord br in
+    let contact_up =
+      by -. float_of_int Ball.radius <= y2
+      && by >= y1
+      && dy <= 0.0
+      && bx >= x1
+      && bx <= x2
+    in
+    let contact_down =
+      by +. float_of_int Ball.radius >= y1
+      && by <= y2
+      && dy >= 0.0
+      && bx >= x1
+      && bx <= x2
+    in
+    contact_down || contact_up
+
+  let contact_x_one_brick br (bx, by) dx =
+    let x1, y1, x2, y2 = edge_coord br in
+    let contact_left =
+      bx +. float_of_int Ball.radius >= x1
+      && bx <= x2
+      && dx >= 0.0
+      && by >= y1
+      && by <= y2
+    in
+    let contact_right =
+      bx -. float_of_int Ball.radius <= x2
+      && bx >= x1
+      && dx <= 0.0
+      && by >= y1
+      && by <= y2
+    in
+    contact_left || contact_right
+
+  let contact_one_brick br (bx, by) dx dy =
+    contact_x_one_brick br (bx, by) dx || contact_y_one_brick br (bx, by) dy
+
+  let contact_x br_list bx dx =
+    List.fold_left
+      (fun acc (br, exists) ->
+        if exists then acc || contact_x_one_brick br bx dx else acc)
+      false
+      br_list
+
+  let contact_y br_list by dy =
+    List.fold_left
+      (fun acc (br, exists) ->
+        if exists then acc || contact_y_one_brick br by dy else acc)
+      false
+      br_list
+
+  let updated_list br_list (bx, by) (dx, dy) =
+    List.map
+      (fun (br, exists) ->
+        if exists && contact_one_brick br (bx, by) dx dy then br, false else br, exists)
+      br_list
+
+  let draw_brique b =
+    let x1, y1, x2, y2, c = b in
+    let x1, y1, x2, y2 =
+      int_of_float x1, int_of_float y1, int_of_float x2, int_of_float y2
+    in
+    Graphics.set_color c;
+    Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
+
+  let draw_briques br_list =
+    List.iter (fun (b, exists) -> if exists then draw_brique b) br_list
+end
+
+type brique = Brique.t * bool
+type etat = ball * int * brique list
+
+(* DRAWING FUNCTIONS *)
+
 (* DRAWING FUNCTIONS *)
 
 let draw_ball : ball -> unit =
@@ -100,32 +193,45 @@ let rec unless flux cond f_flux =
        | Some (a, fl) ->
          if cond a then Flux.uncons (f_flux a) else Some (a, unless fl cond f_flux)))
 
-let contact_x x dx = (x > Box.supx && dx >= 0.0) || (x < Box.infx && dx <= 0.0)
+let contact_x br_list (x, y) dx =
+  (x > Box.supx && dx >= 0.0)
+  || (x < Box.infx && dx <= 0.0)
+  || Brique.contact_x br_list (x, y) dx
+
 let contact_high_y y dy = y > Box.supy && dy >= 0.0
 let contact_low_y y dy = y < -.Box.marge && dy <= 0.0
 
-let contact_y (x, y) dy =
-  contact_high_y y dy || Palette.contact (Palette.mouse_x ()) (x, y) dy
+let contact_y br_list (x, y) dy =
+  contact_high_y y dy
+  || Palette.contact (Palette.mouse_x ()) (x, y) dy
+  || Brique.contact_y br_list (x, y) dy
 
-let rebond_x x dx = if contact_x x dx then -.dx else dx
-let rebond_y (x, y) dy = if contact_y (x, y) dy then -.dy else dy
+let rebond_x br_list x dx = if contact_x br_list x dx then -.dx else dx
+let rebond_y br_list (x, y) dy = if contact_y br_list (x, y) dy then -.dy else dy
 
 (* La balle devient toute seule de plus en plus rapide due à la gravité *)
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
-  let ((x, y), (dx, dy)), score = etat in
+  let ((x, y), (dx, dy)), score, br_list = etat in
   (* est juste là pour test  pour l'instant *)
   let score_flux = Flux.unfold (fun s -> Some (s, s + 1)) score in
-  let dx = rebond_x x dx in
-  let dy = rebond_y (x, y) dy in
+  let ndx = rebond_x br_list (x, y) dx in
+  let ndy = rebond_y br_list (x, y) dy in
   let a_flux = Flux.constant (0.0, -.Init.g) in
-  let v_flux = Flux.map (fun (vx, vy) -> vx +. dx, vy +. dy) (integre Init.dt a_flux) in
+  let v_flux = Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux) in
   let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
   let ball_flux = Flux.map2 (fun x v -> x, v) x_flux v_flux in
+  let brique_flux =
+    Flux.map
+      (fun br_list -> Brique.updated_list br_list (x, y) (dx, dy))
+      (Flux.constant br_list)
+  in
+
   unless
     (unless
-       (Flux.map2 (fun b s -> b, s) ball_flux score_flux)
-       (fun (((x, y), (dx, dy)), _) -> contact_x x dx || contact_y (x, y) dy)
+       (Flux.map3 (fun b s br -> b, s, br) ball_flux score_flux brique_flux)
+       (fun (((x, y), (dx, dy)), _, br_list) ->
+         contact_x br_list (x, y) dx || contact_y br_list (x, y) dy)
        update_etat)
-    (fun (((_, y), (_, dy)), _) -> contact_low_y y dy)
+    (fun (((_, y), (_, dy)), _, _) -> contact_low_y y dy)
     (fun _ -> Flux.vide)
