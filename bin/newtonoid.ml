@@ -23,15 +23,15 @@ let draw_score score =
 (* TODO : juste pour debug pour l'instant *)
 let draw_state : etat -> unit =
   fun etat ->
-  let ball, score, br_list = etat in
+  let (mouse_x, _), ball, score, br_list = etat in
   draw_score score;
-  Palette.draw_palette ();
+  Palette.draw_palette (int_of_float mouse_x);
   Brique.draw_briques br_list;
   Game.draw_ball ball
 
 (* extrait le score courant d'un etat : *)
 let score etat : int =
-  let _, score, _ = etat in
+  let _, _, score, _ = etat in
   score
 
 let draw : etat Flux.t -> unit =

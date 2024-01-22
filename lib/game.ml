@@ -15,21 +15,33 @@ end
 module Init = struct
   let g = 500.
   let dt = 1. /. 60. (* 60 Hz *)
+  let pos_init = 300., 100.
+  let v_init = 0., 500.
 
   (* impulse_facotr * (ball - centre de la palette) = facteur ajouté à la vitesse *)
   let impulse_factor = 8.0
 
   let etat =
-    let ball : ball = (500., 500.), (200., 200.) in
+    let palette = 0., true in
+    let ball : ball = (pos_init, v_init) in
     let score = 0 in
     let briques =
-      let br0 = (100., 200., 200., 250., Graphics.rgb 23 41 32), true in
-      let br1 = (200., 200., 300., 250., Graphics.rgb 0 0 255), true in
-      let br2 = (300., 200., 400., 250., Graphics.rgb 0 189 21), true in
-      let br3 = (400., 200., 500., 250., Graphics.rgb 255 0 0), true in
-      [ br0; br1; br2; br3 ]
+      let create_brick x y =
+        let random_color =
+          Graphics.rgb (Random.int 256) (Random.int 256) (Random.int 256)
+        in
+        ( (x *. 100.0, y *. 50.0, (x +. 1.0) *. 100.0, (y +. 1.0) *. 50.0, random_color)
+        , true )
+      in
+      let rec create_row x y =
+        if x >= 7.0 then [] else create_brick x y :: create_row (x +. 1.0) y
+      in
+      let rec create_briques x y =
+        if y >= 15.0 then [] else create_row x y @ create_briques x (y +. 1.0)
+      in
+      create_briques 3.0 8.0
     in
-    ball, score, briques
+    palette, ball, score, briques
 end
 
 module Ball = struct
@@ -43,32 +55,20 @@ module Palette = struct
   let color = Graphics.rgb 0 0 0
   let pos_y = 20
 
-  let mouse_info () =
-    try
-      let mouse_x, _ = Graphics.mouse_pos () in
-      mouse_x, Graphics.button_down ()
-    with
-    (* j'ai testé l'erreur arrive qu'une fois au début *)
-    | Graphics.Graphic_failure "graphic screen not opened" -> 0, false
-
-  let mouse_x () = fst (mouse_info ())
-  let mouse_down () = snd (mouse_info ())
-
   let edge_coord mouse_x =
     ( mouse_x - (width / 2)
     , pos_y - (height / 2)
     , mouse_x + (width / 2)
     , pos_y + (height / 2) )
 
-  let contact : int -> float * float -> float -> bool =
+  let contact : float -> float * float -> float -> bool =
     fun mouse_x (bx, by) dy ->
     let bx = int_of_float bx in
     let by = int_of_float by - Ball.radius in
-    let x1, _, x2, y2 = edge_coord mouse_x in
+    let x1, _, x2, y2 = edge_coord (int_of_float mouse_x) in
     bx >= x1 && bx <= x2 && by >= 0 && by <= y2 && dy <= 0.0
 
-  let draw_palette () =
-    let mouse_x, _ = mouse_info () in
+  let draw_palette mouse_x =
     Graphics.set_color color;
     let x1, y1, x2, y2 = edge_coord mouse_x in
     Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
@@ -158,7 +158,8 @@ module Brique = struct
 end
 
 type brique = Brique.t * bool
-type etat = ball * int * brique list
+type palette = float * bool
+type etat = palette * ball * int * brique list
 
 (* DRAWING FUNCTIONS *)
 
@@ -204,45 +205,55 @@ let contact_x br_list (x, y) dx =
 let contact_high_y y dy = y > Box.supy && dy >= 0.0
 let contact_low_y y dy = y < -.Box.marge && dy <= 0.0
 
-let contact_y br_list (x, y) dy =
+let contact_y mouse_x br_list (x, y) dy =
   contact_high_y y dy
-  || Palette.contact (Palette.mouse_x ()) (x, y) dy
+  || Palette.contact mouse_x (x, y) dy
   || Brique.contact_y br_list (x, y) dy
 
 let rebond_x br_list x dx = if contact_x br_list x dx then -.dx else dx
-let rebond_y br_list (x, y) dy = if contact_y br_list (x, y) dy then -.dy else dy
+let rebond_y br_list mouse_x (x, y) dy = if contact_y mouse_x br_list (x, y) dy then -.dy else dy
 
 (* La balle devient toute seule de plus en plus rapide due à la gravité *)
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
-  let ((x, y), (dx, dy)), score, br_list = etat in
-  (* est juste là pour test  pour l'instant *)
+  let (mouse_x, _), ((x, y), (dx, dy)), score, br_list = etat in
+  (* score *)
   let score_flux = Flux.unfold (fun s -> Some (s, s + 1)) score in
-  let contact = Palette.contact (Palette.mouse_x ()) (x, y) dy in
+  (* baballe *)
+  let contact = Palette.contact mouse_x (x, y) dy in
   let impulse =
     if contact
     then (
-      let mouse_x, _ = Palette.mouse_info () in
-      let delta = x -. float_of_int mouse_x in
+      let delta = x -. mouse_x in
       delta *. Init.impulse_factor)
     else 0.0
   in
   let ndx = rebond_x br_list (x, y) dx +. impulse in
-  let ndy = rebond_y br_list (x, y) dy in
+  let ndy = rebond_y br_list mouse_x (x, y) dy in
   let a_flux = Flux.constant (0.0, -.Init.g) in
   let v_flux = Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux) in
   let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
   let ball_flux = Flux.map2 (fun x v -> x, v) x_flux v_flux in
+  (* briques *)
   let brique_flux =
     Flux.map
       (fun br_list -> Brique.updated_list br_list (x, y) (dx, dy))
       (Flux.constant br_list)
   in
+
+  (* palette *)
+  let palette_flux =   Flux.unfold
+  (fun () ->
+    let x, _ = Graphics.mouse_pos () in
+    Some ((float_of_int x, Graphics.button_down ()), ()))
+  () in
+
+
   unless
     (unless
-       (Flux.map3 (fun b s br -> b, s, br) ball_flux score_flux brique_flux)
-       (fun (((x, y), (dx, dy)), _, br_list) ->
-         contact_x br_list (x, y) dx || contact_y br_list (x, y) dy)
+       (Flux.map4 (fun p b s br -> p, b, s, br) palette_flux ball_flux score_flux brique_flux)
+       (fun ((mouse_x, _), ((x, y), (dx, dy)), _, br_list) ->
+         contact_x br_list (x, y) dx || contact_y mouse_x br_list (x, y) dy)
        update_etat)
-    (fun (((_, y), (_, dy)), _, _) -> contact_low_y y dy)
+    (fun (_, ((_, y), (_, dy)), _, _) -> contact_low_y y dy)
     (fun _ -> Flux.vide)
