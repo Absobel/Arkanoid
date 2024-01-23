@@ -254,7 +254,7 @@ let rec update_etat : etat -> etat Flux.t =
     else
       Flux.map2 (fun (mouse_x, _) v -> (mouse_x, float_of_int (Palette.pos_y + Ball.radius/2) ), v, new_is_launched)
         palette_flux
-        (Flux.constant (dx, dy))
+        (Flux.constant (dx, mouse_x))
       
   in
   (* briques *)
