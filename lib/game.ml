@@ -30,7 +30,7 @@ module Init = struct
         let random_color =
           Graphics.rgb (Random.int 256) (Random.int 256) (Random.int 256)
         in
-        (x *. 100.0, y *. 50.0, (x +. 1.0) *. 100.0, (y +. 1.0) *. 50.0, random_color)
+        x *. 100.0, y *. 50.0, (x +. 1.0) *. 100.0, (y +. 1.0) *. 50.0, random_color
       in
       let rec create_row x y =
         if x >= 7.0 then [] else create_brick x y :: create_row (x +. 1.0) y
@@ -125,16 +125,10 @@ module Brique = struct
     contact_x_one_brick br (bx, by) dx || contact_y_one_brick br (bx, by) dy
 
   let contact_x br_list bx dx =
-    List.fold_left
-      (fun acc br -> acc || contact_x_one_brick br bx dx)
-      false
-      br_list
+    List.fold_left (fun acc br -> acc || contact_x_one_brick br bx dx) false br_list
 
   let contact_y br_list by dy =
-    List.fold_left
-      (fun acc br -> acc || contact_y_one_brick br by dy)
-      false
-      br_list
+    List.fold_left (fun acc br -> acc || contact_y_one_brick br by dy) false br_list
 
   let updated_list br_list (bx, by) (dx, dy) =
     List.filter (fun br -> not (contact_one_brick br (bx, by) dx dy)) br_list
@@ -147,8 +141,7 @@ module Brique = struct
     Graphics.set_color c;
     Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
 
-  let draw_briques br_list =
-    List.iter draw_brique br_list
+  let draw_briques br_list = List.iter draw_brique br_list
 end
 
 type brique = Brique.t
