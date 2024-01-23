@@ -25,9 +25,9 @@ let draw_state : etat -> unit =
   fun etat ->
   let (mouse_x, _), ball, score, br_list = etat in
   draw_score score;
+  Game.draw_ball ball;
   Palette.draw_palette (int_of_float mouse_x);
-  Brique.draw_briques br_list;
-  Game.draw_ball ball
+  Brique.draw_briques br_list
 
 (* extrait le score courant d'un etat : *)
 let score etat : int =

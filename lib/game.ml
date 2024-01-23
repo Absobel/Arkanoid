@@ -2,7 +2,8 @@ open Iterator
 
 (* OBJECTS *)
 
-type ball = (float * float) * (float * float)
+(* pos * velocity * is_launched *)
+type ball = (float * float) * (float * float) * bool
 
 module Box = struct
   let marge = 10.
@@ -22,8 +23,8 @@ module Init = struct
   let impulse_factor = 8.0
 
   let etat =
-    let palette = 0., true in
-    let ball : ball = (pos_init, v_init) in
+    let palette = 0., false in
+    let ball : ball = pos_init, v_init, false in
     let score = 0 in
     let briques =
       let create_brick x y =
@@ -166,7 +167,7 @@ type etat = palette * ball * int * brique list
 (* DRAWING FUNCTIONS *)
 
 let draw_ball : ball -> unit =
-  fun ((x, y), _) ->
+  fun ((x, y), _, _) ->
   let x = int_of_float x in
   let y = int_of_float y in
   Graphics.set_color Ball.color;
@@ -211,49 +212,84 @@ let contact_y mouse_x br_list (x, y) dy =
   || Brique.contact_y br_list (x, y) dy
 
 let rebond_x br_list x dx = if contact_x br_list x dx then -.dx else dx
-let rebond_y br_list mouse_x (x, y) dy = if contact_y mouse_x br_list (x, y) dy then -.dy else dy
+
+let rebond_y br_list mouse_x (x, y) dy =
+  if contact_y mouse_x br_list (x, y) dy then -.dy else dy
 
 (* La balle devient toute seule de plus en plus rapide due à la gravité *)
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
-  let (mouse_x, _), ((x, y), (dx, dy)), score, br_list = etat in
+  let (mouse_x, mouse_down), ((x, y), (dx, dy), is_launched), score, br_list = etat in
   (* score *)
   let score_flux = Flux.unfold (fun s -> Some (s, s + 1)) score in
-  (* baballe *)
-  let contact = Palette.contact mouse_x (x, y) dy in
-  let impulse =
-    if contact
-    then (
-      let delta = x -. mouse_x in
-      delta *. Init.impulse_factor)
-    else 0.0
+  (* palette *)
+  let palette_flux =
+    Flux.unfold
+      (fun () ->
+        let x, _ = Graphics.mouse_pos () in
+        Some ((float_of_int x, Graphics.button_down ()), ()))
+      ()
   in
-  let ndx = rebond_x br_list (x, y) dx +. impulse in
-  let ndy = rebond_y br_list mouse_x (x, y) dy in
-  let a_flux = Flux.constant (0.0, -.Init.g) in
-  let v_flux = Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux) in
-  let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
-  let ball_flux = Flux.map2 (fun x v -> x, v) x_flux v_flux in
+  (* baballe *)
+  let new_is_launched = is_launched || mouse_down in
+  print_endline
+    ("mouse_down : "
+     ^ string_of_bool mouse_down
+     ^ " | is_launched : "
+     ^ string_of_bool is_launched
+     ^ " | new_is_launched : "
+     ^ string_of_bool new_is_launched);
+  let ball_flux =
+    if new_is_launched
+    then (
+      let contact = Palette.contact mouse_x (x, y) dy in
+      let impulse =
+        if contact
+        then (
+          let delta = x -. mouse_x in
+          delta *. Init.impulse_factor)
+        else 0.0
+      in
+      let ndx = rebond_x br_list (x, y) dx +. impulse in
+      let ndy = rebond_y br_list mouse_x (x, y) dy in
+      let a_flux = Flux.constant (0.0, -.Init.g) in
+      let v_flux =
+        Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux)
+      in
+      let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
+      let is_launched_flux = Flux.constant new_is_launched in
+      Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
+    else
+      Flux.map2 (fun (mouse_x, _) v -> (mouse_x, float_of_int (Palette.pos_y + Ball.radius/2) ), v, new_is_launched)
+        palette_flux
+        (Flux.constant (dx, dy))
+      
+  in
   (* briques *)
   let brique_flux =
     Flux.map
       (fun br_list -> Brique.updated_list br_list (x, y) (dx, dy))
       (Flux.constant br_list)
   in
-
-  (* palette *)
-  let palette_flux =   Flux.unfold
-  (fun () ->
-    let x, _ = Graphics.mouse_pos () in
-    Some ((float_of_int x, Graphics.button_down ()), ()))
-  () in
-
-
+  (* modif flux *)
+  let update_cond : etat -> bool =
+    fun ((mouse_x, mouse_down), ((x, y), (dx, dy), is_launched), _, br_list) ->
+    ((not is_launched) && mouse_down)
+    || contact_x br_list (x, y) dx
+    || contact_y mouse_x br_list (x, y) dy
+  in
+  let death_cond : etat -> bool =
+    fun (_, ((_, y), (_, dy), _), _, _) -> contact_low_y y dy
+  in
   unless
     (unless
-       (Flux.map4 (fun p b s br -> p, b, s, br) palette_flux ball_flux score_flux brique_flux)
-       (fun ((mouse_x, _), ((x, y), (dx, dy)), _, br_list) ->
-         contact_x br_list (x, y) dx || contact_y mouse_x br_list (x, y) dy)
+       (Flux.map4
+          (fun p b s br -> p, b, s, br)
+          palette_flux
+          ball_flux
+          score_flux
+          brique_flux)
+       update_cond
        update_etat)
-    (fun (_, ((_, y), (_, dy)), _, _) -> contact_low_y y dy)
+    death_cond
     (fun _ -> Flux.vide)
