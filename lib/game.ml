@@ -16,7 +16,6 @@ end
 module Init = struct
   let g = 500.
   let dt = 1. /. 60. (* 60 Hz *)
-  let pos_init = 300., 100.
   let v_init = 0., 500.
 
   (* impulse_facotr * (ball - centre de la palette) = facteur ajouté à la vitesse *)
@@ -24,7 +23,7 @@ module Init = struct
 
   let etat =
     let palette = 0., false in
-    let ball : ball = pos_init, v_init, false in
+    let ball : ball = (0., 0.), v_init, false in
     let score = 0 in
     let briques =
       let create_brick x y =
@@ -232,13 +231,6 @@ let rec update_etat : etat -> etat Flux.t =
   in
   (* baballe *)
   let new_is_launched = is_launched || mouse_down in
-  print_endline
-    ("mouse_down : "
-     ^ string_of_bool mouse_down
-     ^ " | is_launched : "
-     ^ string_of_bool is_launched
-     ^ " | new_is_launched : "
-     ^ string_of_bool new_is_launched);
   let ball_flux =
     if new_is_launched
     then (
