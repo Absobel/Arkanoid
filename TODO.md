@@ -3,9 +3,10 @@
 [ ] - vitesse de la palette crée l'impulsion au lieu de la position
 [x] - faire en sorte que la balle part de la palette
 [ ] - ajouter des vies
-[ ] - faire score
+[ ] - faire score (ajouter nb brique qqpart et donner ça à fct score)
 [ ] - ajouter la victoire
 [ ] - utilisation de quadtree au lieu de pos de briques
+[ ] - faire une vraie acceleration au cours du temps
 [ ] - modulariser
 [ ] - commenter/contrats
 [ ] - tests unitaires

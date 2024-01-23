@@ -77,16 +77,14 @@ module Brique = struct
   (* x1, y1, x2, y2, color *)
   type t = float * float * float * float * Graphics.color
 
-  let edge_coord b =
-    let x1, y1, x2, y2, _ = b in
-    x1, y1, x2, y2
-
   let color b =
     let _, _, _, _, c = b in
     c
 
-  let contact_y_one_brick br (bx, by) dy =
-    let x1, y1, x2, y2 = edge_coord br in
+  let is_inside (x1, y1, x2, y2, _) (bx, by) =
+    bx >= x1 && bx <= x2 && by >= y1 && by <= y2
+
+  let contact_y_one_brick (x1, y1, x2, y2, _) (bx, by) dy =
     let contact_up =
       by -. float_of_int Ball.radius <= y2
       && by >= y1
@@ -103,8 +101,7 @@ module Brique = struct
     in
     contact_down || contact_up
 
-  let contact_x_one_brick br (bx, by) dx =
-    let x1, y1, x2, y2 = edge_coord br in
+  let contact_x_one_brick (x1, y1, x2, y2, _) (bx, by) dx =
     let contact_left =
       bx +. float_of_int Ball.radius >= x1
       && bx <= x2
@@ -157,8 +154,6 @@ let draw_ball : ball -> unit =
   Graphics.set_color Ball.color;
   Graphics.fill_circle x y Ball.radius
 
-(* GAME LOGIC *)
-
 (* Fonction qui intègre/somme les valeurs successives du flux *)
 (* avec un pas de temps dt et une valeur initiale nulle, i.e. *)
 (* acc_0 = 0; acc_{i+1} = acc_{i} + dt * flux_{i}             *)
@@ -200,57 +195,62 @@ let rebond_x br_list x dx = if contact_x br_list x dx then -.dx else dx
 let rebond_y br_list mouse_x (x, y) dy =
   if contact_y mouse_x br_list (x, y) dy then -.dy else dy
 
-(* La balle devient toute seule de plus en plus rapide due à la gravité *)
+(* GAME LOGIC *)
+
+let update_score : int -> int Flux.t =
+  fun score -> Flux.unfold (fun s -> Some (s, s + 1)) score
+
+let update_palette () =
+  Flux.unfold
+    (fun () ->
+      let x, _ = Graphics.mouse_pos () in
+      Some ((float_of_int x, Graphics.button_down ()), ()))
+    ()
+
+let update_baballe : palette flux -> palette -> ball -> brique list -> ball Flux.t =
+  fun palette_flux (mouse_x, mouse_down) ((x, y), (dx, dy), is_launched) br_list ->
+  let new_is_launched = is_launched || mouse_down in
+  if new_is_launched
+  then (
+    let contact = Palette.contact mouse_x (x, y) dy in
+    let impulse =
+      if contact
+      then (
+        let delta = x -. mouse_x in
+        delta *. Init.impulse_factor)
+      else 0.0
+    in
+    let ndx = rebond_x br_list (x, y) dx +. impulse in
+    let ndy = rebond_y br_list mouse_x (x, y) dy in
+    let a_flux = Flux.constant (0.0, -.Init.g) in
+    let v_flux =
+      Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux)
+    in
+    let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
+    let is_launched_flux = Flux.constant new_is_launched in
+    Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
+  else
+    Flux.map2
+      (fun (mouse_x, _) dy ->
+        ( (mouse_x, float_of_int (Palette.pos_y + (Ball.radius / 2)))
+        , (mouse_x -. (Box.supx /. 2.), dy)
+        , new_is_launched ))
+      palette_flux
+      (Flux.constant dy)
+
+let update_briques : brique list -> ball -> brique list Flux.t =
+  fun br_list ((x, y), (dx, dy), _) ->
+  Flux.map
+    (fun br_list -> Brique.updated_list br_list (x, y) (dx, dy))
+    (Flux.constant br_list)
+
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
-  let (mouse_x, mouse_down), ((x, y), (dx, dy), is_launched), score, br_list = etat in
-  (* score *)
-  let score_flux = Flux.unfold (fun s -> Some (s, s + 1)) score in
-  (* palette *)
-  let palette_flux =
-    Flux.unfold
-      (fun () ->
-        let x, _ = Graphics.mouse_pos () in
-        Some ((float_of_int x, Graphics.button_down ()), ()))
-      ()
-  in
-  (* baballe *)
-  let new_is_launched = is_launched || mouse_down in
-  let ball_flux =
-    if new_is_launched
-    then (
-      let contact = Palette.contact mouse_x (x, y) dy in
-      let impulse =
-        if contact
-        then (
-          let delta = x -. mouse_x in
-          delta *. Init.impulse_factor)
-        else 0.0
-      in
-      let ndx = rebond_x br_list (x, y) dx +. impulse in
-      let ndy = rebond_y br_list mouse_x (x, y) dy in
-      let a_flux = Flux.constant (0.0, -.Init.g) in
-      let v_flux =
-        Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux)
-      in
-      let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
-      let is_launched_flux = Flux.constant new_is_launched in
-      Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
-    else
-      Flux.map2
-        (fun (mouse_x, _) dy ->
-          ( (mouse_x, float_of_int (Palette.pos_y + (Ball.radius / 2)))
-          , (mouse_x -. (Box.supx /. 2.), dy)
-          , new_is_launched ))
-        palette_flux
-        (Flux.constant dy)
-  in
-  (* briques *)
-  let brique_flux =
-    Flux.map
-      (fun br_list -> Brique.updated_list br_list (x, y) (dx, dy))
-      (Flux.constant br_list)
-  in
+  let palette, ball, score, br_list = etat in
+  let score_flux = update_score score in
+  let palette_flux = update_palette () in
+  let ball_flux = update_baballe palette_flux palette ball br_list in
+  let brique_flux = update_briques br_list ball in
   (* modif flux *)
   let update_cond : etat -> bool =
     fun ((mouse_x, mouse_down), ((x, y), (dx, dy), is_launched), _, br_list) ->
