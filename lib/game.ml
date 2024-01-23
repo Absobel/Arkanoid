@@ -14,16 +14,16 @@ module Box = struct
 end
 
 module Init = struct
-  let g = 500.
+  let g = 200.
   let dt = 1. /. 60. (* 60 Hz *)
-  let v_init = 0., 500.
+  let vy_init = 500.
 
   (* impulse_facotr * (ball - centre de la palette) = facteur ajouté à la vitesse *)
   let impulse_factor = 8.0
 
   let etat =
     let palette = 0., false in
-    let ball : ball = (0., 0.), v_init, false in
+    let ball : ball = (0., 0.), (0., vy_init), false in
     let score = 0 in
     let briques =
       let create_brick x y =
@@ -252,9 +252,9 @@ let rec update_etat : etat -> etat Flux.t =
       let is_launched_flux = Flux.constant new_is_launched in
       Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
     else
-      Flux.map2 (fun (mouse_x, _) v -> (mouse_x, float_of_int (Palette.pos_y + Ball.radius/2) ), v, new_is_launched)
+      Flux.map2 (fun (mouse_x, _) dy -> (mouse_x, float_of_int (Palette.pos_y + Ball.radius/2) ), (mouse_x-.Box.supx/.2., dy), new_is_launched)
         palette_flux
-        (Flux.constant (dx, dy))
+        (Flux.constant dy)
       
   in
   (* briques *)

@@ -5,6 +5,8 @@
 [ ] - refaire la fonction qui crée les briques pour pouvoir faire des rects de briques
 [ ] - ajouter des vies
 [ ] - faire marcher score
+[ ] - ajouter la victoire
+[ ] - ajouter des niveaux
 [ ] - utilisation de quadtree au lieu de pos de briques
 [ ] - modulariser
 [ ] - commenter/contrats
