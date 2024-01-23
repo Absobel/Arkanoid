@@ -30,8 +30,7 @@ module Init = struct
         let random_color =
           Graphics.rgb (Random.int 256) (Random.int 256) (Random.int 256)
         in
-        ( (x *. 100.0, y *. 50.0, (x +. 1.0) *. 100.0, (y +. 1.0) *. 50.0, random_color)
-        , true )
+        (x *. 100.0, y *. 50.0, (x +. 1.0) *. 100.0, (y +. 1.0) *. 50.0, random_color)
       in
       let rec create_row x y =
         if x >= 7.0 then [] else create_brick x y :: create_row (x +. 1.0) y
@@ -127,23 +126,18 @@ module Brique = struct
 
   let contact_x br_list bx dx =
     List.fold_left
-      (fun acc (br, exists) ->
-        if exists then acc || contact_x_one_brick br bx dx else acc)
+      (fun acc br -> acc || contact_x_one_brick br bx dx)
       false
       br_list
 
   let contact_y br_list by dy =
     List.fold_left
-      (fun acc (br, exists) ->
-        if exists then acc || contact_y_one_brick br by dy else acc)
+      (fun acc br -> acc || contact_y_one_brick br by dy)
       false
       br_list
 
   let updated_list br_list (bx, by) (dx, dy) =
-    List.map
-      (fun (br, exists) ->
-        if exists && contact_one_brick br (bx, by) dx dy then br, false else br, exists)
-      br_list
+    List.filter (fun br -> not (contact_one_brick br (bx, by) dx dy)) br_list
 
   let draw_brique b =
     let x1, y1, x2, y2, c = b in
@@ -154,14 +148,12 @@ module Brique = struct
     Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
 
   let draw_briques br_list =
-    List.iter (fun (b, exists) -> if exists then draw_brique b) br_list
+    List.iter draw_brique br_list
 end
 
-type brique = Brique.t * bool
+type brique = Brique.t
 type palette = float * bool
 type etat = palette * ball * int * brique list
-
-(* DRAWING FUNCTIONS *)
 
 (* DRAWING FUNCTIONS *)
 
@@ -252,10 +244,13 @@ let rec update_etat : etat -> etat Flux.t =
       let is_launched_flux = Flux.constant new_is_launched in
       Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
     else
-      Flux.map2 (fun (mouse_x, _) dy -> (mouse_x, float_of_int (Palette.pos_y + Ball.radius/2) ), (mouse_x-.Box.supx/.2., dy), new_is_launched)
+      Flux.map2
+        (fun (mouse_x, _) dy ->
+          ( (mouse_x, float_of_int (Palette.pos_y + (Ball.radius / 2)))
+          , (mouse_x -. (Box.supx /. 2.), dy)
+          , new_is_launched ))
         palette_flux
         (Flux.constant dy)
-      
   in
   (* briques *)
   let brique_flux =
