@@ -7,7 +7,8 @@
 [ ] - ajouter la victoire
 [ ] - utilisation de quadtree au lieu de pos de briques
   [x] - quadtree
-  [ ] - remplacer brique list par brique qtree
+  [x] - remplacer brique list par brique qtree
+  [ ] - faire marcher ça avec plsu qu'une brique
 [ ] - faire une vraie acceleration au cours du temps
 [ ] - modulariser
 [ ] - commenter/contrats
