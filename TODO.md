@@ -6,6 +6,8 @@
 [ ] - faire score (ajouter nb brique qqpart et donner ça à fct score)
 [ ] - ajouter la victoire
 [ ] - utilisation de quadtree au lieu de pos de briques
+  [x] - quadtree
+  [ ] - remplacer brique list par brique qtree
 [ ] - faire une vraie acceleration au cours du temps
 [ ] - modulariser
 [ ] - commenter/contrats
