@@ -89,3 +89,13 @@ let rec remove t (x, y) =
      | true, false -> prune_non_rec (Node (b, q1, remove q2 (x, y), q3, q4))
      | false, true -> prune_non_rec (Node (b, q1, q2, remove q3 (x, y), q4))
      | false, false -> prune_non_rec (Node (b, q1, q2, q3, remove q4 (x, y))))
+
+let rec iter t f =
+  match t with
+  | Empty _ -> ()
+  | Leaf (_, v) -> f v
+  | Node (_, q1, q2, q3, q4) ->
+    iter q1 f;
+    iter q2 f;
+    iter q3 f;
+    iter q4 f
