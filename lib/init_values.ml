@@ -1,3 +1,5 @@
+(* INIT VALUES *)
+
 module Box = struct
   let height = 600.
   let width = 800.
@@ -21,7 +23,7 @@ module Init = struct
     let ball = (0., 0.), (0., vy_init), false in
     let score = 0 in
     let briques =
-      failwith "TODO"
+      Quadtree.insert (Quadtree.empty ((0., 0.), (Box.width, Box.height))) (200., 200.) ((200., 200.), Graphics.red)
     in
     palette, ball, score, briques
 end

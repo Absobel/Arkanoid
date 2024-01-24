@@ -1,4 +1,5 @@
-type bound = (float * float) * (float * float)
+type coord = float * float
+type bound = coord * coord
 
 (* UTILS *)
 
@@ -35,18 +36,20 @@ type 'a t =
 
 let empty b = Empty b
 
-let rec get t (x, y) =
+let rec get : 'a t -> coord -> 'a option =
+  fun t (x, y) ->
   match t with
   | Empty _ -> None
   | Leaf (_, v) -> Some v
-  | Node ((cx, cy), q1, q2, q3, q4) ->
+  | Node (b, q1, q2, q3, q4) ->
+    let cx, cy = center_from_bounds b in
     if x < cx
     then if y < cy then get q1 (x, y) else get q2 (x, y)
     else if y < cy
     then get q3 (x, y)
     else get q4 (x, y)
 
-let rec insert : 'a t -> (float * float) -> 'a -> 'a t =
+let rec insert : 'a t -> coord -> 'a -> 'a t =
  fun t c v -> 
   match t with
   | Empty b -> Leaf (b, v)
@@ -90,12 +93,33 @@ let rec remove t (x, y) =
      | false, true -> prune_non_rec (Node (b, q1, q2, remove q3 (x, y), q4))
      | false, false -> prune_non_rec (Node (b, q1, q2, q3, remove q4 (x, y))))
 
-let rec iter t f =
+let rec iter_val t f =
   match t with
   | Empty _ -> ()
   | Leaf (_, v) -> f v
   | Node (_, q1, q2, q3, q4) ->
-    iter q1 f;
-    iter q2 f;
-    iter q3 f;
-    iter q4 f
+    iter_val q1 f;
+    iter_val q2 f;
+    iter_val q3 f;
+    iter_val q4 f
+
+let rec iter_bound_val t f =
+  match t with
+  | Empty _ -> ()
+  | Leaf (b, v) -> f b v
+  | Node (_, q1, q2, q3, q4) ->
+    iter_bound_val q1 f;
+    iter_bound_val q2 f;
+    iter_bound_val q3 f;
+    iter_bound_val q4 f
+
+let rec filter_val t f =
+  match t with
+  | Empty _ -> t
+  | Leaf (b, v) -> if f v then t else Empty b
+  | Node (b, q1, q2, q3, q4) ->
+    let q1 = filter_val q1 f in
+    let q2 = filter_val q2 f in
+    let q3 = filter_val q3 f in
+    let q4 = filter_val q4 f in
+    prune_non_rec (Node (b, q1, q2, q3, q4))

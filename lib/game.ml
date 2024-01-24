@@ -1,16 +1,9 @@
 open Iterator
 open Briques
 open Init_values
+open Ball
 
 (* OBJECTS *)
-
-(* pos * velocity * is_launched *)
-type ball = (float * float) * (float * float) * bool
-
-module Ball = struct
-  let radius = 10
-  let color = Graphics.rgb 255 0 0
-end
 
 module Palette = struct
   let width = 100
@@ -38,11 +31,11 @@ module Palette = struct
 end
 
 type palette = float * bool
-type etat = palette * ball * int * Briques.t
+type etat = palette * Ball.t * int * Briques.t
 
 (* DRAWING FUNCTIONS *)
 
-let draw_ball : ball -> unit =
+let draw_ball : Ball.t -> unit =
   fun ((x, y), _, _) ->
   let x = int_of_float x in
   let y = int_of_float y in
@@ -102,7 +95,7 @@ let update_palette () =
       Some ((float_of_int x, Graphics.button_down ()), ()))
     ()
 
-let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t =
+let update_baballe : palette flux -> palette -> Ball.t -> Briques.t -> Ball.t Flux.t =
   fun palette_flux (mouse_x, mouse_down) ((x, y), (dx, dy), is_launched) br_qtree ->
   let new_is_launched = is_launched || mouse_down in
   if new_is_launched
@@ -133,7 +126,7 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
       palette_flux
       (Flux.constant dy)
 
-let update_briques : Briques.t -> ball -> Briques.t Flux.t =
+let update_briques : Briques.t -> Ball.t -> Briques.t Flux.t =
   fun br_qtree ((x, y), (dx, dy), _) ->
   Flux.map
     (fun br_qtree -> Briques.updated_tree br_qtree (x, y) (dx, dy))
