@@ -20,20 +20,8 @@ module Init = struct
     let palette = 0., false in
     let ball = (0., 0.), (0., vy_init), false in
     let score = 0 in
-    let briquess =
-      let create_brick x y =
-        let random_color =
-          Graphics.rgb (Random.int 256) (Random.int 256) (Random.int 256)
-        in
-        x *. 100.0, y *. 50.0, (x +. 1.0) *. 100.0, (y +. 1.0) *. 50.0, random_color
-      in
-      let rec create_row x y =
-        if x >= 7.0 then [] else create_brick x y :: create_row (x +. 1.0) y
-      in
-      let rec create_briquess x y =
-        if y >= 15.0 then [] else create_row x y @ create_briquess x (y +. 1.0)
-      in
-      create_briquess 3.0 8.0
+    let briques =
+      failwith "TODO"
     in
-    palette, ball, score, briquess
+    palette, ball, score, briques
 end

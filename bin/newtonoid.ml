@@ -1,9 +1,9 @@
-(* ouvre la bibliotheque de modules definis dans lib/ *)
 open Libnewtonoid
-open Iterator
 
-(* exemple d'ouvertue d'un tel module de la bibliotheque : *)
+open Iterator
 open Game
+open Init_values
+open Briques
 
 let graphic_format =
   Format.sprintf
@@ -23,11 +23,11 @@ let draw_score score =
 (* TODO : juste pour debug pour l'instant *)
 let draw_state : etat -> unit =
   fun etat ->
-  let (mouse_x, _), ball, score, br_list = etat in
+  let (mouse_x, _), ball, score, br_tree = etat in
   draw_score score;
   Game.draw_ball ball;
   Palette.draw_palette (int_of_float mouse_x);
-  Brique.draw_briques br_list
+  Briques.draw_briques br_tree
 
 (* extrait le score courant d'un etat : *)
 let score etat : int =

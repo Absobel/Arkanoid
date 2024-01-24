@@ -21,6 +21,14 @@ module Briques = struct
         let my = floor ( y/. br_height) *. br_height in
         (mx +. br_width /. 2., my +. br_height /. 2.)
 
+    let contact_x br_qtree (x, y) dx =
+        failwith "not implemented"
+
+    let contact_y br_qtree (x, y) dy =
+        failwith "not implemented"
+
+    let updated_tree br_qtree (x, y) (dx, dy) =
+        failwith "not implemented"
     
     let draw_brique : br -> unit =
        fun  ((x, y), color) -> 
