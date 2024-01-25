@@ -1,8 +1,8 @@
 (* INIT VALUES *)
 
 module BoxInit = struct
-  let height = 600.
-  let width = 800.
+  let height = 1600.
+  let width = 1800.
   let marge = 10.
 end
 
