@@ -7,7 +7,6 @@
 [ ] - faire une vraie acceleration au cours du temps
 [ ] - better ball collision
 [ ] - modulariser
-  [ ] - module palette en dehors de game
   [ ] - modulariser brique
   [ ] - move fonctions de game dans leur modules respectifs
 [ ] - commenter/contrats
