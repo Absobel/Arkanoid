@@ -1,7 +1,5 @@
 open Iterator
-open Briques
 open Init_values
-open Palette
 
 (* OBJECTS *)
 

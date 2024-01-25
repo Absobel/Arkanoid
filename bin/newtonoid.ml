@@ -2,8 +2,6 @@ open Libnewtonoid
 open Iterator
 open Game
 open Init_values
-open Briques
-open Palette
 
 let graphic_format =
   Format.sprintf
