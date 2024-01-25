@@ -15,6 +15,11 @@ module Briques = struct
     let my = floor (y /. br_height) *. br_height in
     (mx, my), (mx +. br_width, my +. br_height)
 
+    let coord_to_br_inf (x, y) =
+      let mx = floor (x /. br_width) *. br_width in
+      let my = floor (y /. br_height) *. br_height in
+      (mx, my)
+
   let coord_to_br_center (x, y) =
     let mx = floor (x /. br_width) *. br_width in
     let my = floor (y /. br_height) *. br_height in
@@ -64,14 +69,14 @@ module Briques = struct
 
   let contact_x : t -> float * float -> float -> bool =
     fun br_qtree (bx, by) dx ->
-    let mbr = Quadtree.get br_qtree (bx, by) in
+    let mbr = Quadtree.get br_qtree (coord_to_br_inf (bx, by)) in
     match mbr with
     | None -> false
     | Some br -> contact_x_one_brick br (bx, by) dx
 
   let contact_y : t -> float * float -> float -> bool =
     fun br_qtree (bx, by) dy ->
-    let mbr = Quadtree.get br_qtree (bx, by) in
+    let mbr = Quadtree.get br_qtree (coord_to_br_inf (bx, by)) in
     match mbr with
     | None -> false
     | Some br -> contact_y_one_brick br (bx, by) dy
