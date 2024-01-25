@@ -5,10 +5,10 @@
 [ ] - ajouter des vies
 [ ] - faire score (ajouter nb brique qqpart et donner ça à fct score)
 [ ] - ajouter la victoire
-[ ] - utilisation de quadtree au lieu de pos de briques
+[x] - utilisation de quadtree au lieu de pos de briques
   [x] - quadtree
   [x] - remplacer brique list par brique qtree
-  [ ] - faire marcher ça avec plsu qu'une brique
+  [x] - faire marcher ça avec plsu qu'une brique
 [ ] - faire une vraie acceleration au cours du temps
 [ ] - modulariser
 [ ] - commenter/contrats
