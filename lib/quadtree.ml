@@ -54,11 +54,14 @@ let rec insert : 'a t -> coord -> 'a -> 'a t =
   match t with
   | Empty b -> Leaf (b, c, v)
   | Leaf (b, oc, ov) ->
-    let nt =
-      Node (b, Empty (to_nw b), Empty (to_sw b), Empty (to_ne b), Empty (to_se b))
-    in
-    let nt = insert nt oc ov in
-    insert nt c v
+    if c = oc
+    then Leaf (b, c, v)
+    else (
+      let nt =
+        Node (b, Empty (to_nw b), Empty (to_sw b), Empty (to_ne b), Empty (to_se b))
+      in
+      let nt = insert nt oc ov in
+      insert nt c v)
   | Node (b, q1, q2, q3, q4) ->
     let x, y = c in
     let cx, cy = center_from_bounds b in

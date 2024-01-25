@@ -79,6 +79,18 @@ module Briques = struct
   let updated_tree br_qtree (bx, by) (dx, dy) =
     Quadtree.filter_val br_qtree (fun br -> not (contact_one_brick br (bx, by) dx dy))
 
+  let insert_brique : br Quadtree.t -> br -> br Quadtree.t =
+    fun br_qtree br ->
+    let coord, color = br in
+    let coord, _ = coord_to_br coord in
+    Quadtree.insert br_qtree coord (coord, color)
+
+  let empty = Quadtree.empty ((0., 0.), (BoxInit.width, BoxInit.height))
+
+  let br_list_to_qtree br_list =
+    let br_qtree = empty in
+    List.fold_left insert_brique br_qtree br_list
+
   let draw_brique : br -> unit =
     fun ((x, y), color) ->
     Graphics.set_color color;

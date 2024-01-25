@@ -54,6 +54,13 @@ let draw : etat Flux.t -> unit =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-let () = draw (Game.update_etat Init_values.etat_init)
+let etat_init =
+  let palette = 0., false in
+  let ball = (0., 0.), (0., PhysicsInit.vy_init), false in
+  let score = 0 in
+  let briques = Briques.br_list_to_qtree BriquesInit.br_list in
+  palette, ball, score, briques
+
+let () = draw (Game.update_etat etat_init)
 
 (* faire dune exec bin/newtonoid.exe pour run*)

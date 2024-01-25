@@ -2,7 +2,7 @@
 
 [ ] - vitesse de la palette crée l'impulsion au lieu de la position (penser à garder la norme de la vitesse)
 [x] - faire en sorte que la balle part de la palette
-[ ] - BUGFIX quadtree : correctement snap brick sur grid 
+[x] - BUGFIX quadtree : correctement snap brick sur grid 
 [ ] - ajouter des vies
 [ ] - faire score (ajouter nb brique qqpart et donner ça à fct score)
 [ ] - ajouter la victoire
@@ -11,6 +11,7 @@
   [x] - remplacer brique list par brique qtree
   [x] - faire marcher ça avec plsu qu'une brique
 [ ] - faire une vraie acceleration au cours du temps
+[ ] - better ball collision
 [ ] - modulariser
 [ ] - commenter/contrats
 [ ] - tests unitaires

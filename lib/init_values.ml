@@ -23,6 +23,12 @@ end
 module BriquesInit = struct
   let br_height = 50.
   let br_width = 100.
+
+  (* Les briques peuvent être placées que sur une grille de briques, les coords vont snap sur la coord de grille la plus proche *)
+  let br_list =
+    [ (250., 250.), Graphics.rgb (Random.int 255) (Random.int 255) (Random.int 255)
+    ; (300., 300.), Graphics.rgb (Random.int 255) (Random.int 255) (Random.int 255)
+    ]
 end
 
 module PaletteInit = struct
@@ -31,18 +37,3 @@ module PaletteInit = struct
   let color = Graphics.rgb 0 0 0
   let pos_y = 20
 end
-
-let etat_init =
-  let palette = 0., false in
-  let ball = (0., 0.), (0., PhysicsInit.vy_init), false in
-  let score = 0 in
-  let briques =
-    Quadtree.insert
-      (Quadtree.insert
-         (Quadtree.empty ((0., 0.), (BoxInit.width, BoxInit.height)))
-         (200., 200.)
-         ((200., 200.), Graphics.red))
-      (200., 300.)
-      ((300., 300.), Graphics.green)
-  in
-  palette, ball, score, briques
