@@ -14,7 +14,7 @@ end
 
 type ball = (float * float) * (float * float) * bool
 type palette = float * bool
-type etat = palette * ball * int * Briques.t
+type etat = palette * ball * int * (Briques.t * int)
 
 (* DRAWING FUNCTIONS *)
 
@@ -68,8 +68,9 @@ let rebond_y br_qtree mouse_x (x, y) dy =
 
 (* GAME LOGIC *)
 
-let update_score : int -> int Flux.t =
-  fun score -> Flux.unfold (fun s -> Some (s, s + 1)) score
+let update_score : int -> int -> int Flux.t =
+  fun score nb_br_touched -> 
+    Flux.constant (score + nb_br_touched*BriquesInit.score_per_br)
 
 let update_palette () =
   Flux.unfold
@@ -111,7 +112,7 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
       palette_flux
       (Flux.constant dy)
 
-let update_briques : Briques.t -> ball -> Briques.t Flux.t =
+let update_briques : Briques.t -> ball -> (Briques.t * int) Flux.t =
   fun br_qtree ((x, y), (dx, dy), _) ->
   Flux.map
     (fun br_qtree -> Briques.updated_tree br_qtree (x, y) (dx, dy))
@@ -119,14 +120,14 @@ let update_briques : Briques.t -> ball -> Briques.t Flux.t =
 
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
-  let palette, ball, score, br_qtree = etat in
-  let score_flux = update_score score in
+  let palette, ball, score, (br_qtree, nb_br_touched) = etat in
+  let score_flux = update_score score nb_br_touched in
   let palette_flux = update_palette () in
   let ball_flux = update_baballe palette_flux palette ball br_qtree in
   let briques_flux = update_briques br_qtree ball in
   (* modif flux *)
   let update_cond : etat -> bool =
-    fun ((mouse_x, mouse_down), ((x, y), (dx, dy), is_launched), _, br_qtree) ->
+    fun ((mouse_x, mouse_down), ((x, y), (dx, dy), is_launched), _, (br_qtree, _)) ->
     ((not is_launched) && mouse_down)
     || contact_x br_qtree (x, y) dx
     || contact_y mouse_x br_qtree (x, y) dy

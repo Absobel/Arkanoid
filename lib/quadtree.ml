@@ -116,13 +116,16 @@ let rec iter_coord_val t f =
     iter_coord_val q3 f;
     iter_coord_val q4 f
 
-let rec filter_val t f =
-  match t with
-  | Empty _ -> t
-  | Leaf (b, _, v) -> if f v then t else Empty b
-  | Node (b, q1, q2, q3, q4) ->
-    let q1 = filter_val q1 f in
-    let q2 = filter_val q2 f in
-    let q3 = filter_val q3 f in
-    let q4 = filter_val q4 f in
-    prune_non_rec (Node (b, q1, q2, q3, q4))
+let filter_val_count_removal t f =
+  let rec aux t acc =
+    match t with
+    | Empty _ -> t, acc
+    | Leaf (b, _, v) -> if f v then t, acc else Empty b, acc+1
+    | Node (b, q1, q2, q3, q4) ->
+      let q1, nacc = aux q1 acc in
+      let q2, nacc = aux q2 nacc in
+      let q3, nacc = aux q3 nacc in
+      let q4, nacc = aux q4 nacc in
+      prune_non_rec (Node (b, q1, q2, q3, q4)), nacc
+  in
+  aux t 0

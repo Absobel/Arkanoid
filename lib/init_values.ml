@@ -23,6 +23,7 @@ end
 module BriquesInit = struct
   let br_height = 50.
   let br_width = 100.
+  let score_per_br = 100
 
   (* liste de briques de type : ((float*float) * Graphics.color) list *)
   (* Les briques peuvent être placées que sur une grille de briques, les coords vont snap sur la coord de grille la plus proche *)

@@ -61,8 +61,8 @@ let contact_y_one_brick : br -> float * float -> float -> bool =
   in
   contact_top || contact_bottom
 
-let contact_one_brick : br -> float * float -> float -> float -> bool =
-  fun br (bx, by) dx dy ->
+let contact_one_brick : br -> float * float -> float * float -> bool =
+  fun br (bx, by) (dx, dy) ->
   contact_x_one_brick br (bx, by) dx || contact_y_one_brick br (bx, by) dy
 
 let contact_x : t -> float * float -> float -> bool =
@@ -79,8 +79,15 @@ let contact_y : t -> float * float -> float -> bool =
   | None -> false
   | Some br -> contact_y_one_brick br (bx, by) dy
 
+let contact : t -> float * float -> float * float -> bool =
+  fun br_qtree (bx, by) (dx, dy) ->
+  let mbr = Quadtree.get br_qtree (coord_to_br_inf (bx, by)) in
+  match mbr with
+  | None -> false
+  | Some br -> contact_one_brick br (bx, by) (dx, dy)
+
 let updated_tree br_qtree (bx, by) (dx, dy) =
-  Quadtree.filter_val br_qtree (fun br -> not (contact_one_brick br (bx, by) dx dy))
+  Quadtree.filter_val_count_removal br_qtree (fun br -> not (contact_one_brick br (bx, by) (dx, dy)))
 
 let insert_brique : br Quadtree.t -> br -> br Quadtree.t =
   fun br_qtree br ->

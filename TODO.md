@@ -2,7 +2,7 @@
 
 [ ] - vitesse de la palette crée l'impulsion au lieu de la position (penser à garder la norme de la vitesse)
 [ ] - ajouter des vies
-[ ] - faire score (ajouter nb brique qqpart et donner ça à fct score)
+[ ] - faire que score de fin soit correct ou alors afficher score sur écran de fin instead
 [ ] - ajouter la victoire
 [ ] - faire une vraie acceleration au cours du temps
 [ ] - better ball collision
