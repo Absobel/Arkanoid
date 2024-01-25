@@ -1,5 +1,4 @@
 open Libnewtonoid
-
 open Iterator
 open Game
 open Init_values
@@ -8,8 +7,8 @@ open Briques
 let graphic_format =
   Format.sprintf
     " %dx%d+50+50"
-    (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
-    (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
+    (int_of_float ((2. *. BoxInit.marge) +. Box.supx -. Box.infx))
+    (int_of_float ((2. *. BoxInit.marge) +. Box.supy -. Box.infy))
 
 let draw_score score =
   let score = string_of_int score in
@@ -38,15 +37,15 @@ let draw : etat Flux.t -> unit =
   fun flux_etat ->
   let rec loop : etat Flux.t -> int -> int =
     fun flux_etat last_score ->
-      match Flux.(uncons flux_etat) with
-      | None -> last_score
-      | Some (etat, flux_etat') ->
+    match Flux.(uncons flux_etat) with
+    | None -> last_score
+    | Some (etat, flux_etat') ->
       Graphics.clear_graph ();
       (* DESSIN ETAT *)
       draw_state etat;
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
-      Unix.sleepf Init.dt;
+      Unix.sleepf PhysicsInit.dt;
       loop flux_etat' (last_score + score etat)
   in
   Graphics.open_graph graphic_format;
@@ -55,6 +54,6 @@ let draw : etat Flux.t -> unit =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-let () = draw (Game.update_etat Init.etat)
+let () = draw (Game.update_etat Init_values.etat_init)
 
 (* faire dune exec bin/newtonoid.exe pour run*)

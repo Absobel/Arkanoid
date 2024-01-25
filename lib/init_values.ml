@@ -1,31 +1,48 @@
 (* INIT VALUES *)
 
-module Box = struct
+module BoxInit = struct
   let height = 600.
   let width = 800.
   let marge = 10.
-  let infx = 0. +. marge
-  let infy = 0. +. marge
-  let supx = width -. marge
-  let supy = height -. marge
 end
 
-module Init = struct
+module PhysicsInit = struct
   let g = 200.
   let dt = 1. /. 60. (* 60 Hz *)
   let vy_init = 500.
 
   (* impulse_facotr * (ball - centre de la palette) = facteur ajouté à la vitesse *)
   let impulse_factor = 8.0
-
-  let etat =
-    let palette = 0., false in
-    let ball = (0., 0.), (0., vy_init), false in
-    let score = 0 in
-    let briques =
-      Quadtree.insert (
-      Quadtree.insert (Quadtree.empty ((0., 0.), (Box.width, Box.height))) (200., 200.) ((200., 200.), Graphics.red))
-      (300., 300.) ((300., 300.), Graphics.green)
-    in
-    palette, ball, score, briques
 end
+
+module BallInit = struct
+  let radius = 10
+  let color = Graphics.rgb 255 0 0
+end
+
+module BriquesInit = struct
+  let br_height = 50.
+  let br_width = 100.
+end
+
+module PaletteInit = struct
+  let width = 100
+  let height = 10
+  let color = Graphics.rgb 0 0 0
+  let pos_y = 20
+end
+
+let etat_init =
+  let palette = 0., false in
+  let ball = (0., 0.), (0., PhysicsInit.vy_init), false in
+  let score = 0 in
+  let briques =
+    Quadtree.insert
+      (Quadtree.insert
+         (Quadtree.empty ((0., 0.), (BoxInit.width, BoxInit.height)))
+         (200., 200.)
+         ((200., 200.), Graphics.red))
+      (200., 300.)
+      ((300., 300.), Graphics.green)
+  in
+  palette, ball, score, briques

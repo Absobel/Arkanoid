@@ -50,7 +50,7 @@ let rec get : 'a t -> coord -> 'a option =
     else get q4 (x, y)
 
 let rec insert : 'a t -> coord -> 'a -> 'a t =
- fun t c v -> 
+  fun t c v ->
   match t with
   | Empty b -> Leaf (b, c, v)
   | Leaf (b, oc, ov) ->

@@ -1,15 +1,14 @@
 open Init_values
-open Ball
 
 module Briques = struct
+  open BriquesInit
+
   type inf_coord = float * float
   type br = inf_coord * Graphics.color
   type t = br Quadtree.t
 
-  let br_height = 50.
-  let br_width = 100.
-  let nb_br_x = Box.width /. br_width
-  let nb_br_y = Box.height /. br_height
+  let nb_br_x = BoxInit.width /. br_width
+  let nb_br_y = BoxInit.height /. br_height
 
   let coord_to_br (x, y) =
     let mx = floor (x /. br_width) *. br_width in
@@ -25,10 +24,18 @@ module Briques = struct
     fun ((x, y), _) (bx, by) dx ->
     let x2, y2 = x +. br_width, y +. br_height in
     let contact_left =
-      bx +. float_of_int Ball.radius >= x && bx <= x2 && dx >= 0.0 && by >= y && by <= y2
+      bx +. float_of_int BallInit.radius >= x
+      && bx <= x2
+      && dx >= 0.0
+      && by >= y
+      && by <= y2
     in
     let contact_right =
-      bx -. float_of_int Ball.radius <= x2 && bx >= x && dx <= 0.0 && by >= y && by <= y2
+      bx -. float_of_int BallInit.radius <= x2
+      && bx >= x
+      && dx <= 0.0
+      && by >= y
+      && by <= y2
     in
     contact_left || contact_right
 
@@ -36,10 +43,18 @@ module Briques = struct
     fun ((x, y), _) (bx, by) dy ->
     let x2, y2 = x +. br_width, y +. br_height in
     let contact_top =
-      by +. float_of_int Ball.radius >= y && by <= y2 && dy >= 0.0 && bx >= x && bx <= x2
+      by +. float_of_int BallInit.radius >= y
+      && by <= y2
+      && dy >= 0.0
+      && bx >= x
+      && bx <= x2
     in
     let contact_bottom =
-      by -. float_of_int Ball.radius <= y2 && by >= y && dy <= 0.0 && bx >= x && bx <= x2
+      by -. float_of_int BallInit.radius <= y2
+      && by >= y
+      && dy <= 0.0
+      && bx >= x
+      && bx <= x2
     in
     contact_top || contact_bottom
 

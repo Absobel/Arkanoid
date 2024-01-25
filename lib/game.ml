@@ -1,15 +1,20 @@
 open Iterator
 open Briques
 open Init_values
-open Ball
 
 (* OBJECTS *)
 
+module Box = struct
+  open Init_values.BoxInit
+
+  let infx = 0. +. marge
+  let infy = 0. +. marge
+  let supx = width -. marge
+  let supy = height -. marge
+end
+
 module Palette = struct
-  let width = 100
-  let height = 10
-  let color = Graphics.rgb 0 0 0
-  let pos_y = 20
+  open Init_values.PaletteInit
 
   let edge_coord mouse_x =
     ( mouse_x - (width / 2)
@@ -20,7 +25,7 @@ module Palette = struct
   let contact : float -> float * float -> float -> bool =
     fun mouse_x (bx, by) dy ->
     let bx = int_of_float bx in
-    let by = int_of_float by - Ball.radius in
+    let by = int_of_float by - BallInit.radius in
     let x1, _, x2, y2 = edge_coord (int_of_float mouse_x) in
     bx >= x1 && bx <= x2 && by >= 0 && by <= y2 && dy <= 0.0
 
@@ -30,17 +35,18 @@ module Palette = struct
     Graphics.fill_rect x1 y1 (x2 - x1) (y2 - y1)
 end
 
+type ball = (float * float) * (float * float) * bool
 type palette = float * bool
-type etat = palette * Ball.t * int * Briques.t
+type etat = palette * ball * int * Briques.t
 
 (* DRAWING FUNCTIONS *)
 
-let draw_ball : Ball.t -> unit =
+let draw_ball : ball -> unit =
   fun ((x, y), _, _) ->
   let x = int_of_float x in
   let y = int_of_float y in
-  Graphics.set_color Ball.color;
-  Graphics.fill_circle x y Ball.radius
+  Graphics.set_color BallInit.color;
+  Graphics.fill_circle x y BallInit.radius
 
 (* Fonction qui intègre/somme les valeurs successives du flux *)
 (* avec un pas de temps dt et une valeur initiale nulle, i.e. *)
@@ -71,7 +77,7 @@ let contact_x br_qtree (x, y) dx =
   || Briques.contact_x br_qtree (x, y) dx
 
 let contact_high_y y dy = y > Box.supy && dy >= 0.0
-let contact_low_y y dy = y < -.Box.marge && dy <= 0.0
+let contact_low_y y dy = y < -.BoxInit.marge && dy <= 0.0
 
 let contact_y mouse_x br_qtree (x, y) dy =
   contact_high_y y dy
@@ -95,7 +101,7 @@ let update_palette () =
       Some ((float_of_int x, Graphics.button_down ()), ()))
     ()
 
-let update_baballe : palette flux -> palette -> Ball.t -> Briques.t -> Ball.t Flux.t =
+let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t =
   fun palette_flux (mouse_x, mouse_down) ((x, y), (dx, dy), is_launched) br_qtree ->
   let new_is_launched = is_launched || mouse_down in
   if new_is_launched
@@ -105,28 +111,30 @@ let update_baballe : palette flux -> palette -> Ball.t -> Briques.t -> Ball.t Fl
       if contact
       then (
         let delta = x -. mouse_x in
-        delta *. Init.impulse_factor)
+        delta *. PhysicsInit.impulse_factor)
       else 0.0
     in
     let ndx = rebond_x br_qtree (x, y) dx +. impulse in
     let ndy = rebond_y br_qtree mouse_x (x, y) dy in
-    let a_flux = Flux.constant (0.0, -.Init.g) in
+    let a_flux = Flux.constant (0.0, -.PhysicsInit.g) in
     let v_flux =
-      Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre Init.dt a_flux)
+      Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre PhysicsInit.dt a_flux)
     in
-    let x_flux = Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre Init.dt v_flux) in
+    let x_flux =
+      Flux.map (fun (nx, ny) -> nx +. x, ny +. y) (integre PhysicsInit.dt v_flux)
+    in
     let is_launched_flux = Flux.constant new_is_launched in
     Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
   else
     Flux.map2
       (fun (mouse_x, _) dy ->
-        ( (mouse_x, float_of_int (Palette.pos_y + (Ball.radius / 2)))
+        ( (mouse_x, float_of_int (PaletteInit.pos_y + (BallInit.radius / 2)))
         , (mouse_x -. (Box.supx /. 2.), dy)
         , new_is_launched ))
       palette_flux
       (Flux.constant dy)
 
-let update_briques : Briques.t -> Ball.t -> Briques.t Flux.t =
+let update_briques : Briques.t -> ball -> Briques.t Flux.t =
   fun br_qtree ((x, y), (dx, dy), _) ->
   Flux.map
     (fun br_qtree -> Briques.updated_tree br_qtree (x, y) (dx, dy))

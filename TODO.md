@@ -1,7 +1,8 @@
 # Obligatoire
 
-[ ] - vitesse de la palette crée l'impulsion au lieu de la position
+[ ] - vitesse de la palette crée l'impulsion au lieu de la position (penser à garder la norme de la vitesse)
 [x] - faire en sorte que la balle part de la palette
+[ ] - BUGFIX quadtree : correctement snap brick sur grid 
 [ ] - ajouter des vies
 [ ] - faire score (ajouter nb brique qqpart et donner ça à fct score)
 [ ] - ajouter la victoire
