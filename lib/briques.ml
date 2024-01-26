@@ -27,6 +27,15 @@ let potential_contact_point (bx, by) (dx, dy) =
   in
   bx +. pdx, by +. pdy, bx -. mdx, by -. mdy
 
+let%test _ = potential_contact_point (0., 0.) (1., 0.) = (BallInit.radius, 0., -.BallInit.radius -. 50., 0.)
+let%test _ = potential_contact_point (0., 0.) (0., 1.) = (0., BallInit.radius, 0., -.BallInit.radius -. 50.)
+
+(** [coord_to_br] calcule les coordonnées de la brique contenant le point (x, y)
+  @param (x, y) coordonnées du point
+  @return (x1, y1) coordonnées du coin inférieur gauche de la brique
+          (x2, y2) coordonnées du coin supérieur droit de la brique *)
+
+
 (** [coord_to_br] calcule les coordonnées de la brique contenant le point (x, y)
   @param (x, y) coordonnées du point
   @return (x1, y1) coordonnées du coin inférieur gauche de la brique
@@ -35,6 +44,10 @@ let coord_to_br (x, y) =
   let mx = floor (x /. br_width) *. br_width in
   let my = floor (y /. br_height) *. br_height in
   (mx, my), (mx +. br_width, my +. br_height)
+
+let%test _ = coord_to_br (0., 0.) = ((0., 0.), (br_width, br_height))
+let%test _ = coord_to_br (br_width /. 2., br_height /. 2.) = ((0., 0.), (br_width, br_height))
+let%test _ = coord_to_br (br_width /. 2. +. 1., br_height /. 2. +. 1.) = ((0., 0.), (br_width, br_height))
 
 (** [contact_one_brick] calcule si la balle va entrer en contact avec la brique
   @param br brique
@@ -59,6 +72,10 @@ let contact_one_brick : br -> float * float -> float * float -> bool * bool =
     || (mby > y2 && pby <= y2 && bx >= x1 && bx <= x2)
   in
   cv, ch
+
+let%test _ = contact_one_brick ((0., 0.), Graphics.red) (0., 0.) (1., 0.) = (true, false)
+let%test _ = contact_one_brick ((0., 0.), Graphics.red) (0., 0.) (0., 1.) = (false, true)
+let%test _ = contact_one_brick ((0., 0.), Graphics.red) (10., 20.) (10., 10.) = (true, true)
 
 (** [contact] calcule si la balle va entrer en contact avec une brique en 
     regardant s'il y a une brique et si oui en regardant s'il y a collision
