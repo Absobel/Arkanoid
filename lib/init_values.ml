@@ -11,8 +11,8 @@ module PhysicsInit = struct
   let dt = 1. /. 60. (* 60 Hz *)
   let vy_init = 500.
 
-  (* impulse_facotr * (ball - centre de la palette) = facteur ajouté à la vitesse *)
-  let impulse_factor = 8.0
+  (* impulse_facotr * vitesse_palette = facteur ajouté à la vitesse *)
+  let impulse_factor = 0.3
 end
 
 module BallInit = struct

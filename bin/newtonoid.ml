@@ -21,7 +21,7 @@ let draw_score score =
 (* TODO : juste pour debug pour l'instant *)
 let draw_state : etat -> unit =
   fun etat ->
-  let (mouse_x, _), ball, score, (br_tree, _) = etat in
+  let (mouse_x, _, _), ball, score, (br_tree, _) = etat in
   draw_score score;
   Game.draw_ball ball;
   Palette.draw_palette (int_of_float mouse_x);
@@ -54,7 +54,7 @@ let draw : etat Flux.t -> unit =
   Graphics.close_graph ()
 
 let etat_init =
-  let palette = 0., false in
+  let palette = 0., 0., false in
   let ball = (0., 0.), (0., PhysicsInit.vy_init), false in
   let score = 0 in
   let briques = Briques.br_list_to_qtree BriquesInit.br_list, 0 in

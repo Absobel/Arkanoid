@@ -13,7 +13,7 @@ module Box = struct
 end
 
 type ball = (float * float) * (float * float) * bool
-type palette = float * bool
+type palette = float * float * bool
 type etat = palette * ball * int * (Briques.t * int)
 
 (* DRAWING FUNCTIONS *)
@@ -68,30 +68,28 @@ let rebond_y br_qtree mouse_x (x, y) dy =
 
 (* GAME LOGIC *)
 
-let update_score : int -> int -> int Flux.t =
-  fun score nb_br_touched ->
+let update_score score nb_br_touched =
   Flux.constant (score + (nb_br_touched * BriquesInit.score_per_br))
 
 let update_palette () =
   Flux.unfold
-    (fun () ->
+    (fun prev_x ->
       let x, _ = Graphics.mouse_pos () in
-      Some ((float_of_int x, Graphics.button_down ()), ()))
-    ()
+      let x = float_of_int x in
+      let dx = (x -. prev_x) /. PhysicsInit.dt in
+      Some ((x, dx, Graphics.button_down ()), x))
+    0.0
 
 let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t =
-  fun palette_flux (mouse_x, mouse_down) ((x, y), (dx, dy), is_launched) br_qtree ->
+  fun palette_flux
+    (mouse_x, mouse_dx, mouse_down)
+    ((x, y), (dx, dy), is_launched)
+    br_qtree ->
   let new_is_launched = is_launched || mouse_down in
   if new_is_launched
   then (
     let contact = Palette.contact mouse_x (x, y) dy in
-    let impulse =
-      if contact
-      then (
-        let delta = x -. mouse_x in
-        delta *. PhysicsInit.impulse_factor)
-      else 0.0
-    in
+    let impulse = if contact then mouse_dx *. PhysicsInit.impulse_factor else 0.0 in
     let ndx = rebond_x br_qtree (x, y) dx +. impulse in
     let ndy = rebond_y br_qtree mouse_x (x, y) dy in
     let a_flux = Flux.constant (0.0, -.PhysicsInit.g) in
@@ -105,7 +103,7 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
     Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
   else
     Flux.map2
-      (fun (mouse_x, _) dy ->
+      (fun (mouse_x, _, _) dy ->
         ( (mouse_x, float_of_int (PaletteInit.pos_y + (BallInit.radius / 2)))
         , (mouse_x -. (Box.supx /. 2.), dy)
         , new_is_launched ))
@@ -127,7 +125,7 @@ let rec update_etat : etat -> etat Flux.t =
   let briques_flux = update_briques br_qtree ball in
   (* modif flux *)
   let update_cond : etat -> bool =
-    fun ((mouse_x, mouse_down), ((x, y), (dx, dy), is_launched), _, (br_qtree, _)) ->
+    fun ((mouse_x, _, mouse_down), ((x, y), (dx, dy), is_launched), _, (br_qtree, _)) ->
     ((not is_launched) && mouse_down)
     || contact_x br_qtree (x, y) dx
     || contact_y mouse_x br_qtree (x, y) dy
