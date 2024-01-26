@@ -71,7 +71,8 @@ let draw : etat Flux.t -> unit =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-(** [main] est la fonction principale *)
+(** [main] est la fonction principale
+    on crée le flux avec l'était initial, un score initial et la valeur des vies initiales *)
 let () = draw (Game.update_etat (Game.etat_init (0, OtherInit.init_lives)))
 
 (* faire dune exec bin/newtonoid.exe pour run*)

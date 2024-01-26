@@ -50,6 +50,7 @@ let integre dt flux =
   acc
 
 (** [contact_x] teste le contact avec une surface verticale
+    (bords de la fenêtre ou briques)
   @param br_qtree arbre des briques
   @param (x, y) position de la balle
   @param (dx, dy) vitesse de la balle
@@ -59,7 +60,8 @@ let contact_x br_qtree (x, y) (dx, dy) =
   || (x < Box.infx && dx <= 0.0)
   || fst (Briques.contact br_qtree (x, y) (dx, dy))
 
-(** [contact_y] teste le contact avec une surface horizontal
+(** [contact_y] teste le contact avec une surface horizontale
+    (bord supérieur de la fenêtre, palette ou briques)
   @param mouse_x position de la souris (= position de la palette)
   @param br_qtree arbre des briques
   @param (x, y) position de la balle
@@ -117,8 +119,10 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
     (mouse_x, mouse_dx, mouse_down)
     ((x, y), (dx, dy), is_launched)
     br_qtree ->
+  (* passe à vrai une seule fois et le reste : quand le premier clic est réalisé *)
   let new_is_launched = is_launched || mouse_down in
   if new_is_launched
+  (* jeu normal *)
   then (
     let contact = Palette.contact mouse_x (x, y) dy in
     let impulse = if contact then mouse_dx *. PhysicsInit.impulse_factor else 0.0 in
@@ -133,7 +137,8 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
     in
     let is_launched_flux = Flux.constant new_is_launched in
     Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
-  else
+  else (* la balle reste au niveau de la palette jusqu'au premier clic ou elle est envoyée
+          a une vitesse y intiale et une vitesse x qui est la vitesse de la palette *)
     Flux.map2
       (fun (mouse_x, mouse_dx, _) dy ->
         ( (mouse_x, PaletteInit.pos_y +. (BallInit.radius /. 2.))
@@ -162,20 +167,24 @@ let rec update_etat : etat -> etat Flux.t =
   let palette_flux = update_palette () in
   let ball_flux = update_baballe palette_flux palette ball br_qtree in
   let briques_flux = update_briques br_qtree ball in
-  (* modif flux *)
+  (* check s'il y a le premier clic ou s'il y a contact avec quoique ce soit sauf le bord inférieur de la fenêtre *)
   let update_cond : etat -> bool =
     fun ((mouse_x, _, mouse_down), ((x, y), (dx, dy), is_launched), _, (br_qtree, _)) ->
     ((not is_launched) && mouse_down)
     || contact_x br_qtree (x, y) (dx, dy)
     || contact_y mouse_x br_qtree (x, y) (dx, dy)
   in
+  (* check s'il y a contact (mortel) avec le bord inférieur de la fenêtre *)
   let death_cond : etat -> bool =
     fun (_, ((_, y), (_, dy), _), _, _) -> y < -.BoxInit.marge && dy <= 0.0
   in
+  (* flux si rien ne change *)
   let flux_continue =
     Flux.map4 (fun p b s br -> p, b, s, br) palette_flux ball_flux score_flux briques_flux
   in
+  (* flux si le joueur est mauvais (termine la partie s'il n'y a plus de vies) *)
   let flux_death _ =
     if lives == 1 then Flux.vide else update_etat (etat_init (score, lives - 1))
   in
+  (* le flux se met à jour à chaque contact ou se réinitialise en cas de mort *)  
   Flux.unless (Flux.unless flux_continue update_cond update_etat) death_cond flux_death

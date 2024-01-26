@@ -9,7 +9,10 @@ end
 
 (** valeurs initiales de la physique *)
 module PhysicsInit = struct
+  (* gravité *)
   let g = 200.
+  (* l'unité de temps la plus petite : plus élevé permet d'avoir plus de 
+     frames (si l'écran le supporte) et donc des meilleures physiques *)
   let dt = 1. /. 60. (* 60 Hz *)
 
   (* impulse_facotr * vitesse_palette = facteur ajouté à la vitesse *)
@@ -27,6 +30,7 @@ end
 module BriquesInit = struct
   let br_height = 50.
   let br_width = 100.
+  (* score par brique*)
   let score_per_br = 100
 
   (* liste de briques de type : ((float*float) * Graphics.color) list *)
@@ -35,6 +39,7 @@ module BriquesInit = struct
     let create_brick x y =
       (x, y), Graphics.rgb (Random.int 255) (Random.int 255) (Random.int 255)
     in
+    (* replit l'écran de briques, c'est modifiable *)
     let rec fill acc x y max_x max_y =
       if x > max_x
       then fill acc 0. (y +. br_height) max_x max_y

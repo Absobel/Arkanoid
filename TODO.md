@@ -6,7 +6,7 @@
 [ ] - faire une vraie acceleration au cours du temps
 [ ] - modulariser
   [ ] - modulariser brique
-[ ] - commenter/contrats
+[ ] - commenter
 [ ] - tests unitaires
 [x] - le reste
 

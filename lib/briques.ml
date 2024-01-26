@@ -6,7 +6,8 @@ type br = (float * float) * Graphics.color
 (** collection contenant toutes les briques *)
 type t = br Quadtree.t
 
-(** nombre de briques en longueur et en hauteur *)
+(** nombre de briques en longueur et en hauteur : les briques sont agencées sur 
+    une grille de briques avec toutes les briques de la même taille *)
 let nb_br_x = BoxInit.width /. br_width
 let nb_br_y = BoxInit.height /. br_height
 
@@ -47,16 +48,20 @@ let contact_one_brick : br -> float * float -> float * float -> bool * bool =
   let x2, y2 = x1 +. br_width, y1 +. br_height in
   let pbx, pby, mbx, mby = potential_contact_point (bx, by) (dx, dy) in
   let cv =
-    (mbx < x1 && pbx >= x1 && by >= y1 && by <= y2)
-    || (mbx > x2 && pbx <= x2 && by >= y1 && by <= y2)
+    (* check si la zone du potentiel point de contact à derrière la balle sur la direction de la vitesse se situe dans la brique
+       check aussi que le point de contact touche bien la brique du bon côté *)
+    (mbx < x1 && pbx >= x1 && by >= y1 && pby <= y2)
+    || (mbx > x2 && pbx <= x2 && by >= y1 && pby <= y2)
   in
   let ch =
+    (* de même mais horizontalement *)
     (mby < y1 && pby >= y1 && bx >= x1 && bx <= x2)
     || (mby > y2 && pby <= y2 && bx >= x1 && bx <= x2)
   in
   cv, ch
 
-(** [contact] calcule si la balle va entrer en contact avec une brique
+(** [contact] calcule si la balle va entrer en contact avec une brique en 
+    regardant s'il y a une brique et si oui en regardant s'il y a collision
   @param br_qtree collection de briques
   @param (bx, by) coordonnées de la balle
   @param (dx, dy) vecteur vitesse de la balle
