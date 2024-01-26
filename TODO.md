@@ -4,9 +4,6 @@
 [ ] - faire que score de fin soit correct ou alors afficher score sur écran de fin instead
 [ ] - ajouter la victoire
 [ ] - faire une vraie acceleration au cours du temps
-[ ] - modulariser
-  [ ] - modulariser brique
-[ ] - commenter
 [ ] - tests unitaires
 [x] - le reste
 
