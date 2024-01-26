@@ -29,11 +29,6 @@ let coord_to_br_inf (x, y) =
   let my = floor (y /. br_height) *. br_height in
   mx, my
 
-let coord_to_br_center (x, y) =
-  let mx = floor (x /. br_width) *. br_width in
-  let my = floor (y /. br_height) *. br_height in
-  mx +. (br_width /. 2.), my +. (br_height /. 2.)
-
 (* bool de gauche collision verticale, bool de droite collision horizontale *)
 let contact_one_brick : br -> float * float -> float * float -> bool * bool =
   fun br (bx, by) (dx, dy) ->

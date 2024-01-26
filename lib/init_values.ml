@@ -47,3 +47,7 @@ module PaletteInit = struct
   let color = Graphics.rgb 0 0 0
   let pos_y = 20.0
 end
+
+module OtherInit = struct
+  let init_lives = 3
+end

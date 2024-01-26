@@ -106,16 +106,6 @@ let rec iter_val t f =
     iter_val q3 f;
     iter_val q4 f
 
-let rec iter_coord_val t f =
-  match t with
-  | Empty _ -> ()
-  | Leaf (_, c, v) -> f c v
-  | Node (_, q1, q2, q3, q4) ->
-    iter_coord_val q1 f;
-    iter_coord_val q2 f;
-    iter_coord_val q3 f;
-    iter_coord_val q4 f
-
 let filter_val_count_removal t f =
   let rec aux t acc =
     match t with

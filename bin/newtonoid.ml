@@ -9,27 +9,34 @@ let graphic_format =
     (int_of_float ((2. *. BoxInit.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. BoxInit.marge) +. Box.supy -. Box.infy))
 
-let draw_score score =
+let draw_info (score, lives) =
   let score = string_of_int score in
-  let score = "Score : " ^ score in
+  let lives = string_of_int lives in
+  let info = "Score : " ^ score ^ " | Lives : " ^ lives in
   Graphics.set_color Graphics.black;
   (* Marche pas parce que personne s'est donné la peine de le faire marcher *)
   (* Graphics.set_text_size 20; *)
   Graphics.moveto 10 10;
-  Graphics.draw_string score
+  Graphics.draw_string info
 
-(* TODO : juste pour debug pour l'instant *)
+let draw_ball : ball -> unit =
+  fun ((x, y), _, _) ->
+  let x = int_of_float x in
+  let y = int_of_float y in
+  Graphics.set_color BallInit.color;
+  Graphics.fill_circle x y (int_of_float BallInit.radius)
+
 let draw_state : etat -> unit =
   fun etat ->
-  let (mouse_x, _, _), ball, score, (br_tree, _) = etat in
-  draw_score score;
-  Game.draw_ball ball;
+  let (mouse_x, _, _), ball, info, (br_tree, _) = etat in
+  draw_info info;
+  draw_ball ball;
   Palette.draw_palette mouse_x;
   Briques.draw_briques br_tree
 
 (* extrait le score courant d'un etat : *)
 let score etat : int =
-  let _, _, score, _ = etat in
+  let _, _, (score, _), _ = etat in
   score
 
 let draw : etat Flux.t -> unit =
@@ -53,13 +60,6 @@ let draw : etat Flux.t -> unit =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-let etat_init =
-  let palette = 0., 0., false in
-  let ball = (0., 0.), (0., BallInit.vy_init), false in
-  let score = 0 in
-  let briques = Briques.br_list_to_qtree BriquesInit.br_list, 0 in
-  palette, ball, score, briques
-
-let () = draw (Game.update_etat etat_init)
+let () = draw (Game.update_etat (Game.etat_init (0, OtherInit.init_lives)))
 
 (* faire dune exec bin/newtonoid.exe pour run*)

@@ -14,16 +14,16 @@ end
 
 type ball = (float * float) * (float * float) * bool
 type palette = float * float * bool
-type etat = palette * ball * int * (Briques.t * int)
+type etat = palette * ball * (int * int) * (Briques.t * int)
 
-(* DRAWING FUNCTIONS *)
+(* UTILS *)
 
-let draw_ball : ball -> unit =
-  fun ((x, y), _, _) ->
-  let x = int_of_float x in
-  let y = int_of_float y in
-  Graphics.set_color BallInit.color;
-  Graphics.fill_circle x y (int_of_float BallInit.radius)
+let etat_init info =
+  let palette = 0., 0., false in
+  let ball = (0., 0.), (0., BallInit.vy_init), false in
+  let score = info in
+  let briques = Briques.br_list_to_qtree BriquesInit.br_list, 0 in
+  palette, ball, score, briques
 
 (* Fonction qui intègre/somme les valeurs successives du flux *)
 (* avec un pas de temps dt et une valeur initiale nulle, i.e. *)
@@ -39,14 +39,6 @@ let integre dt flux =
   (* définition récursive du flux acc *)
   let rec acc = Tick (lazy (Some (init, Flux.map2 iter acc flux))) in
   acc
-
-let rec unless flux cond f_flux =
-  Tick
-    (lazy
-      (match Flux.uncons flux with
-       | None -> None
-       | Some (a, fl) ->
-         if cond a then Flux.uncons (f_flux a) else Some (a, unless fl cond f_flux)))
 
 let contact_x br_qtree (x, y) (dx, dy) =
   (x > Box.supx && dx >= 0.0)
@@ -65,8 +57,8 @@ let rebond_y br_qtree mouse_x p (dx, dy) =
 
 (* GAME LOGIC *)
 
-let update_score score nb_br_touched =
-  Flux.constant (score + (nb_br_touched * BriquesInit.score_per_br))
+let update_score (score, lives) nb_br_touched =
+  Flux.constant (score + (nb_br_touched * BriquesInit.score_per_br), lives)
 
 let update_palette () =
   Flux.unfold
@@ -115,8 +107,8 @@ let update_briques : Briques.t -> ball -> (Briques.t * int) Flux.t =
 
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
-  let palette, ball, score, (br_qtree, nb_br_touched) = etat in
-  let score_flux = update_score score nb_br_touched in
+  let palette, ball, (score, lives), (br_qtree, nb_br_touched) = etat in
+  let score_flux = update_score (score, lives) nb_br_touched in
   let palette_flux = update_palette () in
   let ball_flux = update_baballe palette_flux palette ball br_qtree in
   let briques_flux = update_briques br_qtree ball in
@@ -130,15 +122,10 @@ let rec update_etat : etat -> etat Flux.t =
   let death_cond : etat -> bool =
     fun (_, ((_, y), (_, dy), _), _, _) -> y < -.BoxInit.marge && dy <= 0.0
   in
-  unless
-    (unless
-       (Flux.map4
-          (fun p b s br -> p, b, s, br)
-          palette_flux
-          ball_flux
-          score_flux
-          briques_flux)
-       update_cond
-       update_etat)
-    death_cond
-    (fun _ -> Flux.vide)
+  let flux_continue =
+    Flux.map4 (fun p b s br -> p, b, s, br) palette_flux ball_flux score_flux briques_flux
+  in
+  let flux_death _ =
+    if lives == 1 then Flux.vide else update_etat (etat_init (score, lives - 1))
+  in
+  Flux.unless (Flux.unless flux_continue update_cond update_etat) death_cond flux_death
