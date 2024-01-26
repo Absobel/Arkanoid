@@ -69,8 +69,8 @@ let rebond_y br_qtree mouse_x (x, y) dy =
 (* GAME LOGIC *)
 
 let update_score : int -> int -> int Flux.t =
-  fun score nb_br_touched -> 
-    Flux.constant (score + nb_br_touched*BriquesInit.score_per_br)
+  fun score nb_br_touched ->
+  Flux.constant (score + (nb_br_touched * BriquesInit.score_per_br))
 
 let update_palette () =
   Flux.unfold

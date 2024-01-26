@@ -120,7 +120,7 @@ let filter_val_count_removal t f =
   let rec aux t acc =
     match t with
     | Empty _ -> t, acc
-    | Leaf (b, _, v) -> if f v then t, acc else Empty b, acc+1
+    | Leaf (b, _, v) -> if f v then t, acc else Empty b, acc + 1
     | Node (b, q1, q2, q3, q4) ->
       let q1, nacc = aux q1 acc in
       let q2, nacc = aux q2 nacc in
