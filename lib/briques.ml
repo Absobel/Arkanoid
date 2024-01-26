@@ -8,6 +8,17 @@ type t = br Quadtree.t
 let nb_br_x = BoxInit.width /. br_width
 let nb_br_y = BoxInit.height /. br_height
 
+let potential_contact_point (bx, by) (dx, dy) =
+  let norm_d = sqrt ((dx *. dx) +. (dy *. dy)) in
+  let ndx, ndy = dx /. norm_d, dy /. norm_d in
+  let pdx, pdy = BallInit.radius *. ndx, BallInit.radius *. ndy in
+  (* marge derrière la balle pour checker quand y'a collision même si la balle va vite. C'est pas beau comme code, certes *)
+  let magic_nb = 50. in
+  let mdx, mdy =
+    (BallInit.radius +. magic_nb) *. ndx, (BallInit.radius +. magic_nb) *. ndy
+  in
+  bx +. pdx, by +. pdy, bx -. mdx, by -. mdy
+
 let coord_to_br (x, y) =
   let mx = floor (x /. br_width) *. br_width in
   let my = floor (y /. br_height) *. br_height in
@@ -23,56 +34,34 @@ let coord_to_br_center (x, y) =
   let my = floor (y /. br_height) *. br_height in
   mx +. (br_width /. 2.), my +. (br_height /. 2.)
 
-let contact_x_one_brick : br -> float * float -> float -> bool =
-  fun ((x, y), _) (bx, by) dx ->
-  let x2, y2 = x +. br_width, y +. br_height in
-  let contact_left =
-    bx +. BallInit.radius >= x && bx <= x2 && dx >= 0.0 && by >= y && by <= y2
-  in
-  let contact_right =
-    bx -. BallInit.radius <= x2 && bx >= x && dx <= 0.0 && by >= y && by <= y2
-  in
-  contact_left || contact_right
-
-let contact_y_one_brick : br -> float * float -> float -> bool =
-  fun ((x, y), _) (bx, by) dy ->
-  let x2, y2 = x +. br_width, y +. br_height in
-  let contact_top =
-    by +. BallInit.radius >= y && by <= y2 && dy >= 0.0 && bx >= x && bx <= x2
-  in
-  let contact_bottom =
-    by -. BallInit.radius <= y2 && by >= y && dy <= 0.0 && bx >= x && bx <= x2
-  in
-  contact_top || contact_bottom
-
-let contact_one_brick : br -> float * float -> float * float -> bool =
+(* bool de gauche collision verticale, bool de droite collision horizontale *)
+let contact_one_brick : br -> float * float -> float * float -> bool * bool =
   fun br (bx, by) (dx, dy) ->
-  contact_x_one_brick br (bx, by) dx || contact_y_one_brick br (bx, by) dy
+  let (x1, y1), _ = br in
+  let x2, y2 = x1 +. br_width, y1 +. br_height in
+  let pbx, pby, mbx, mby = potential_contact_point (bx, by) (dx, dy) in
+  let cv =
+    (mbx < x1 && pbx >= x1 && by >= y1 && by <= y2)
+    || (mbx > x2 && pbx <= x2 && by >= y1 && by <= y2)
+  in
+  let ch =
+    (mby < y1 && pby >= y1 && bx >= x1 && bx <= x2)
+    || (mby > y2 && pby <= y2 && bx >= x1 && bx <= x2)
+  in
+  cv, ch
 
-let contact_x : t -> float * float -> float -> bool =
-  fun br_qtree (bx, by) dx ->
-  let mbr = Quadtree.get br_qtree (coord_to_br_inf (bx, by)) in
-  match mbr with
-  | None -> false
-  | Some br -> contact_x_one_brick br (bx, by) dx
-
-let contact_y : t -> float * float -> float -> bool =
-  fun br_qtree (bx, by) dy ->
-  let mbr = Quadtree.get br_qtree (coord_to_br_inf (bx, by)) in
-  match mbr with
-  | None -> false
-  | Some br -> contact_y_one_brick br (bx, by) dy
-
-let contact : t -> float * float -> float * float -> bool =
+let contact : t -> float * float -> float * float -> bool * bool =
   fun br_qtree (bx, by) (dx, dy) ->
-  let mbr = Quadtree.get br_qtree (coord_to_br_inf (bx, by)) in
+  let nbx, nby, _, _ = potential_contact_point (bx, by) (dx, dy) in
+  let mbr = Quadtree.get br_qtree (coord_to_br_inf (nbx, nby)) in
   match mbr with
-  | None -> false
+  | None -> false, false
   | Some br -> contact_one_brick br (bx, by) (dx, dy)
 
 let updated_tree br_qtree (bx, by) (dx, dy) =
   Quadtree.filter_val_count_removal br_qtree (fun br ->
-    not (contact_one_brick br (bx, by) (dx, dy)))
+    let cv, ch = contact_one_brick br (bx, by) (dx, dy) in
+    not (cv || ch))
 
 let insert_brique : br Quadtree.t -> br -> br Quadtree.t =
   fun br_qtree br ->

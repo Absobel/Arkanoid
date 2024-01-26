@@ -55,7 +55,7 @@ let draw : etat Flux.t -> unit =
 
 let etat_init =
   let palette = 0., 0., false in
-  let ball = (0., 0.), (0., PhysicsInit.vy_init), false in
+  let ball = (0., 0.), (0., BallInit.vy_init), false in
   let score = 0 in
   let briques = Briques.br_list_to_qtree BriquesInit.br_list, 0 in
   palette, ball, score, briques

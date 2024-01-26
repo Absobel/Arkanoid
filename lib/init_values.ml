@@ -9,7 +9,6 @@ end
 module PhysicsInit = struct
   let g = 200.
   let dt = 1. /. 60. (* 60 Hz *)
-  let vy_init = 500.
 
   (* impulse_facotr * vitesse_palette = facteur ajouté à la vitesse *)
   let impulse_factor = 0.3
@@ -18,6 +17,7 @@ end
 module BallInit = struct
   let radius = 10.0
   let color = Graphics.rgb 255 0 0
+  let vy_init = 500.
 end
 
 module BriquesInit = struct

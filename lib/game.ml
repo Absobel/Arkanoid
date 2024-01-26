@@ -48,20 +48,20 @@ let rec unless flux cond f_flux =
        | Some (a, fl) ->
          if cond a then Flux.uncons (f_flux a) else Some (a, unless fl cond f_flux)))
 
-let contact_x br_qtree (x, y) dx =
+let contact_x br_qtree (x, y) (dx, dy) =
   (x > Box.supx && dx >= 0.0)
   || (x < Box.infx && dx <= 0.0)
-  || Briques.contact_x br_qtree (x, y) dx
+  || fst (Briques.contact br_qtree (x, y) (dx, dy))
 
-let contact_y mouse_x br_qtree (x, y) dy =
+let contact_y mouse_x br_qtree (x, y) (dx, dy) =
   (y > Box.supy && dy >= 0.0)
   || Palette.contact mouse_x (x, y) dy
-  || Briques.contact_y br_qtree (x, y) dy
+  || snd (Briques.contact br_qtree (x, y) (dx, dy))
 
-let rebond_x br_qtree x dx = if contact_x br_qtree x dx then -.dx else dx
+let rebond_x br_qtree p (dx, dy) = if contact_x br_qtree p (dx, dy) then -.dx else dx
 
-let rebond_y br_qtree mouse_x (x, y) dy =
-  if contact_y mouse_x br_qtree (x, y) dy then -.dy else dy
+let rebond_y br_qtree mouse_x p (dx, dy) =
+  if contact_y mouse_x br_qtree p (dx, dy) then -.dy else dy
 
 (* GAME LOGIC *)
 
@@ -87,8 +87,8 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
   then (
     let contact = Palette.contact mouse_x (x, y) dy in
     let impulse = if contact then mouse_dx *. PhysicsInit.impulse_factor else 0.0 in
-    let ndx = rebond_x br_qtree (x, y) dx +. impulse in
-    let ndy = rebond_y br_qtree mouse_x (x, y) dy in
+    let ndx = rebond_x br_qtree (x, y) (dx, dy) +. impulse in
+    let ndy = rebond_y br_qtree mouse_x (x, y) (dx, dy) in
     let a_flux = Flux.constant (0.0, -.PhysicsInit.g) in
     let v_flux =
       Flux.map (fun (vx, vy) -> vx +. ndx, vy +. ndy) (integre PhysicsInit.dt a_flux)
@@ -100,9 +100,9 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
     Flux.map3 (fun x v b -> x, v, b) x_flux v_flux is_launched_flux)
   else
     Flux.map2
-      (fun (mouse_x, _, _) dy ->
+      (fun (mouse_x, mouse_dx, _) dy ->
         ( (mouse_x, PaletteInit.pos_y +. (BallInit.radius /. 2.))
-        , (mouse_x -. (Box.supx /. 2.), dy)
+        , (mouse_dx, dy)
         , new_is_launched ))
       palette_flux
       (Flux.constant dy)
@@ -124,8 +124,8 @@ let rec update_etat : etat -> etat Flux.t =
   let update_cond : etat -> bool =
     fun ((mouse_x, _, mouse_down), ((x, y), (dx, dy), is_launched), _, (br_qtree, _)) ->
     ((not is_launched) && mouse_down)
-    || contact_x br_qtree (x, y) dx
-    || contact_y mouse_x br_qtree (x, y) dy
+    || contact_x br_qtree (x, y) (dx, dy)
+    || contact_y mouse_x br_qtree (x, y) (dx, dy)
   in
   let death_cond : etat -> bool =
     fun (_, ((_, y), (_, dy), _), _, _) -> y < -.BoxInit.marge && dy <= 0.0
