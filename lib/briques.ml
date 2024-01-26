@@ -27,18 +27,10 @@ let contact_x_one_brick : br -> float * float -> float -> bool =
   fun ((x, y), _) (bx, by) dx ->
   let x2, y2 = x +. br_width, y +. br_height in
   let contact_left =
-    bx +. BallInit.radius >= x
-    && bx <= x2
-    && dx >= 0.0
-    && by >= y
-    && by <= y2
+    bx +. BallInit.radius >= x && bx <= x2 && dx >= 0.0 && by >= y && by <= y2
   in
   let contact_right =
-    bx -. BallInit.radius <= x2
-    && bx >= x
-    && dx <= 0.0
-    && by >= y
-    && by <= y2
+    bx -. BallInit.radius <= x2 && bx >= x && dx <= 0.0 && by >= y && by <= y2
   in
   contact_left || contact_right
 
@@ -46,18 +38,10 @@ let contact_y_one_brick : br -> float * float -> float -> bool =
   fun ((x, y), _) (bx, by) dy ->
   let x2, y2 = x +. br_width, y +. br_height in
   let contact_top =
-    by +. BallInit.radius >= y
-    && by <= y2
-    && dy >= 0.0
-    && bx >= x
-    && bx <= x2
+    by +. BallInit.radius >= y && by <= y2 && dy >= 0.0 && bx >= x && bx <= x2
   in
   let contact_bottom =
-    by -. BallInit.radius <= y2
-    && by >= y
-    && dy <= 0.0
-    && bx >= x
-    && bx <= x2
+    by -. BallInit.radius <= y2 && by >= y && dy <= 0.0 && bx >= x && bx <= x2
   in
   contact_top || contact_bottom
 
