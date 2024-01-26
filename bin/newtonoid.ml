@@ -3,12 +3,16 @@ open Iterator
 open Game
 open Init_values
 
+(** [graphic_format] est le format de la fenetre *)
 let graphic_format =
   Format.sprintf
     " %dx%d+50+50"
     (int_of_float ((2. *. BoxInit.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. BoxInit.marge) +. Box.supy -. Box.infy))
 
+(** [draw_info] dessine les informations du jeu en bas à gauche de l'écran
+    @param score le score du joueur
+    @param lives le nombre de vies restantes *)
 let draw_info (score, lives) =
   let score = string_of_int score in
   let lives = string_of_int lives in
@@ -19,6 +23,8 @@ let draw_info (score, lives) =
   Graphics.moveto 10 10;
   Graphics.draw_string info
 
+(** [draw_ball] dessine la balle
+    @param ball les coordonnées de la balle à dessiner (et autres infos non utilisées) *)
 let draw_ball : ball -> unit =
   fun ((x, y), _, _) ->
   let x = int_of_float x in
@@ -26,6 +32,8 @@ let draw_ball : ball -> unit =
   Graphics.set_color BallInit.color;
   Graphics.fill_circle x y (int_of_float BallInit.radius)
 
+(** [draw_state] dessine l'état du jeu (appelle toutes les autres fonctions de dessin dans chaque module)
+    @param etat l'état du jeu à dessiner *)
 let draw_state : etat -> unit =
   fun etat ->
   let (mouse_x, _, _), ball, info, (br_tree, _) = etat in
@@ -34,11 +42,14 @@ let draw_state : etat -> unit =
   Palette.draw_palette mouse_x;
   Briques.draw_briques br_tree
 
-(* extrait le score courant d'un etat : *)
+(** [score] renvoie le score d'un état
+    @param etat l'état dont on veut le score *)
 let score etat : int =
   let _, _, (score, _), _ = etat in
   score
 
+(** [draw] dessine l'état du jeu en boucle
+    @param flux_etat le flux des états du jeu *)
 let draw : etat Flux.t -> unit =
   fun flux_etat ->
   let rec loop : etat Flux.t -> int -> int =
@@ -60,6 +71,7 @@ let draw : etat Flux.t -> unit =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
+(** [main] est la fonction principale *)
 let () = draw (Game.update_etat (Game.etat_init (0, OtherInit.init_lives)))
 
 (* faire dune exec bin/newtonoid.exe pour run*)

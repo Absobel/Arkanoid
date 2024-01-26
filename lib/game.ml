@@ -3,6 +3,7 @@ open Init_values
 
 (* OBJECTS *)
 
+(** module contenant des valeurs utiles en rapport avec la fenêtre de jeu, pas assez pour mériter son propre fichier *)
 module Box = struct
   open Init_values.BoxInit
 
@@ -12,12 +13,20 @@ module Box = struct
   let supy = height -. marge
 end
 
+(** position * vitesse * est_lancée *)
 type ball = (float * float) * (float * float) * bool
+(** position souris (= position palette) * vitesse * est_souris_cliquée *)
 type palette = float * float * bool
-type etat = palette * ball * (int * int) * (Briques.t * int)
+(** score * vies *)
+type info = int * int
+(** état du jeu *)
+type etat = palette * ball * info * (Briques.t * int)
 
 (* UTILS *)
 
+(** [etat_init] permet de définir l'état initial du jeu
+  @param info score et vies initiaux
+  @return état initial du jeu *)
 let etat_init info =
   let palette = 0., 0., false in
   let ball = (0., 0.), (0., BallInit.vy_init), false in
@@ -25,12 +34,12 @@ let etat_init info =
   let briques = Briques.br_list_to_qtree BriquesInit.br_list, 0 in
   palette, ball, score, briques
 
-(* Fonction qui intègre/somme les valeurs successives du flux *)
-(* avec un pas de temps dt et une valeur initiale nulle, i.e. *)
-(* acc_0 = 0; acc_{i+1} = acc_{i} + dt * flux_{i}             *)
-(* paramètres:                                                *)
-(* dt : float                                                 *)
-(* flux : (float * float) Flux.t                              *)
+(** [integre] fonction qui intègre/somme les valeurs successives du flux avec 
+              un pas de temps dt et une valeur initiale nulle, i.e. 
+              acc_0 = 0; acc_{i+1} = acc_{i} + dt * flux_{i}
+  @param dt pas de temps
+  @param flux flux à intégrer
+  @return flux intégré *)
 let integre dt flux =
   (* valeur initiale de l'intégrateur *)
   let init = 0., 0. in
@@ -40,26 +49,54 @@ let integre dt flux =
   let rec acc = Tick (lazy (Some (init, Flux.map2 iter acc flux))) in
   acc
 
+(** [contact_x] teste le contact avec une surface verticale
+  @param br_qtree arbre des briques
+  @param (x, y) position de la balle
+  @param (dx, dy) vitesse de la balle
+  @return true si la balle est en contact avec une surface verticale *)
 let contact_x br_qtree (x, y) (dx, dy) =
   (x > Box.supx && dx >= 0.0)
   || (x < Box.infx && dx <= 0.0)
   || fst (Briques.contact br_qtree (x, y) (dx, dy))
 
+(** [contact_y] teste le contact avec une surface horizontal
+  @param mouse_x position de la souris (= position de la palette)
+  @param br_qtree arbre des briques
+  @param (x, y) position de la balle
+  @param (dx, dy) vitesse de la balle
+  @return true si la balle est en contact avec une surface horizontale *)
 let contact_y mouse_x br_qtree (x, y) (dx, dy) =
   (y > Box.supy && dy >= 0.0)
   || Palette.contact mouse_x (x, y) dy
   || snd (Briques.contact br_qtree (x, y) (dx, dy))
 
+(** [rebond_x] change la vitesse si rebond sur une surface horizontale
+  @param br_qtree arbre des briques
+  @param (x, y) position de la balle
+  @param (dx, dy) vitesse de la balle
+  @return nouvelle vitesse de la balle après un éventuel rebond horizontal *)
 let rebond_x br_qtree p (dx, dy) = if contact_x br_qtree p (dx, dy) then -.dx else dx
 
+(** [rebond_y] change la vitesse si rebond sur une surface verticale
+  @param mouse_x position de la souris (= position de la palette)
+  @param br_qtree arbre des briques
+  @param (x, y) position de la balle
+  @param (dx, dy) vitesse de la balle
+  @return nouvelle vitesse de la baller après un éventuel rebond vertical *)
 let rebond_y br_qtree mouse_x p (dx, dy) =
   if contact_y mouse_x br_qtree p (dx, dy) then -.dy else dy
 
 (* GAME LOGIC *)
 
-let update_score (score, lives) nb_br_touched =
+(** [update_score] crée le flux de score par rapport au score précédent et au nombre de briques touchées
+  @param (score, lives) score et vies actuels (vies non modifiées)
+  @param nb_br_touched nombre de briques touchées par la balle depuis la dernière mise à jour
+  @return flux d'informations sur le jeu *)
+let update_info (score, lives) nb_br_touched =
   Flux.constant (score + (nb_br_touched * BriquesInit.score_per_br), lives)
 
+(** [update_palette] crée le flux de palette (position, vitesse et s'il y a clic gauche)
+  @return flux de palette *)
 let update_palette () =
   Flux.unfold
     (fun prev_x ->
@@ -69,6 +106,12 @@ let update_palette () =
       Some ((x, dx, Graphics.button_down ()), x))
     0.0
 
+(** [update_baballe] crée le flux de balle (position, vitesse et si elle est lancée)
+  @param palette_flux flux de palette
+  @param palette palette
+  @param ball balle
+  @param br_qtree arbre des briques
+  @return flux de balle *)
 let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t =
   fun palette_flux
     (mouse_x, mouse_dx, mouse_down)
@@ -99,16 +142,23 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
       palette_flux
       (Flux.constant dy)
 
+(** [update_briques] crée le flux de briques (arbre des briques et nombre de briques touchées depuis la dernière mise à jour)
+  @param br_qtree arbre des briques
+  @param ball balle
+  @return flux de briques *)
 let update_briques : Briques.t -> ball -> (Briques.t * int) Flux.t =
   fun br_qtree ((x, y), (dx, dy), _) ->
   Flux.map
     (fun br_qtree -> Briques.updated_tree br_qtree (x, y) (dx, dy))
     (Flux.constant br_qtree)
 
+(** [update_etat] crée le flux d'état du jeu (palette, balle, score, briques)
+  @param etat état du jeu
+  @return flux d'état du jeu *)
 let rec update_etat : etat -> etat Flux.t =
   fun etat ->
   let palette, ball, (score, lives), (br_qtree, nb_br_touched) = etat in
-  let score_flux = update_score (score, lives) nb_br_touched in
+  let score_flux = update_info (score, lives) nb_br_touched in
   let palette_flux = update_palette () in
   let ball_flux = update_baballe palette_flux palette ball br_qtree in
   let briques_flux = update_briques br_qtree ball in

@@ -1,11 +1,13 @@
-(* INIT VALUES *)
+(** Valeurs de réglage modifiables *)
 
+(** valeurs initiales de la fenêtre de jeu*)
 module BoxInit = struct
   let height = 600.
   let width = 800.
   let marge = 10.
 end
 
+(** valeurs initiales de la physique *)
 module PhysicsInit = struct
   let g = 200.
   let dt = 1. /. 60. (* 60 Hz *)
@@ -14,12 +16,14 @@ module PhysicsInit = struct
   let impulse_factor = 0.3
 end
 
+(** valeurs initiales de la balle *)
 module BallInit = struct
   let radius = 10.0
   let color = Graphics.rgb 255 0 0
   let vy_init = 500.
 end
 
+(** valeurs initiales des briques *)
 module BriquesInit = struct
   let br_height = 50.
   let br_width = 100.
@@ -41,6 +45,7 @@ module BriquesInit = struct
     fill [] 0. (br_height *. 4.) BoxInit.width BoxInit.height
 end
 
+(** valeurs initiales de la palette *)
 module PaletteInit = struct
   let width = 100.0
   let height = 10.0
@@ -48,6 +53,7 @@ module PaletteInit = struct
   let pos_y = 20.0
 end
 
+(** valeurs initiales diverses sur l'état du jeu *)
 module OtherInit = struct
   let init_lives = 3
 end
