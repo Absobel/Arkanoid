@@ -16,7 +16,7 @@ module PhysicsInit = struct
 end
 
 module BallInit = struct
-  let radius = 10
+  let radius = 10.0
   let color = Graphics.rgb 255 0 0
 end
 
@@ -42,8 +42,8 @@ module BriquesInit = struct
 end
 
 module PaletteInit = struct
-  let width = 100
-  let height = 10
+  let width = 100.0
+  let height = 10.0
   let color = Graphics.rgb 0 0 0
-  let pos_y = 20
+  let pos_y = 20.0
 end

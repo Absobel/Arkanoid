@@ -23,7 +23,7 @@ let draw_ball : ball -> unit =
   let x = int_of_float x in
   let y = int_of_float y in
   Graphics.set_color BallInit.color;
-  Graphics.fill_circle x y BallInit.radius
+  Graphics.fill_circle x y (int_of_float BallInit.radius)
 
 (* Fonction qui intègre/somme les valeurs successives du flux *)
 (* avec un pas de temps dt et une valeur initiale nulle, i.e. *)
@@ -53,11 +53,8 @@ let contact_x br_qtree (x, y) dx =
   || (x < Box.infx && dx <= 0.0)
   || Briques.contact_x br_qtree (x, y) dx
 
-let contact_high_y y dy = y > Box.supy && dy >= 0.0
-let contact_low_y y dy = y < -.BoxInit.marge && dy <= 0.0
-
 let contact_y mouse_x br_qtree (x, y) dy =
-  contact_high_y y dy
+  (y > Box.supy && dy >= 0.0)
   || Palette.contact mouse_x (x, y) dy
   || Briques.contact_y br_qtree (x, y) dy
 
@@ -104,7 +101,7 @@ let update_baballe : palette flux -> palette -> ball -> Briques.t -> ball Flux.t
   else
     Flux.map2
       (fun (mouse_x, _, _) dy ->
-        ( (mouse_x, float_of_int (PaletteInit.pos_y + (BallInit.radius / 2)))
+        ( (mouse_x, PaletteInit.pos_y +. (BallInit.radius /. 2.))
         , (mouse_x -. (Box.supx /. 2.), dy)
         , new_is_launched ))
       palette_flux
@@ -131,7 +128,7 @@ let rec update_etat : etat -> etat Flux.t =
     || contact_y mouse_x br_qtree (x, y) dy
   in
   let death_cond : etat -> bool =
-    fun (_, ((_, y), (_, dy), _), _, _) -> contact_low_y y dy
+    fun (_, ((_, y), (_, dy), _), _, _) -> y < -.BoxInit.marge && dy <= 0.0
   in
   unless
     (unless
